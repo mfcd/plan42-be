@@ -1,0 +1,20 @@
+[project]
+name = "plan42-be"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Mattia",email = "mattia@entropy42.com"}
+]
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+dependencies = [
+    "fastapi[standard] (>=0.117.1,<0.118.0)",
+    "load-dotenv (>=0.1.0,<0.2.0)",
+    "langgraph (>=0.6.7,<0.7.0)",
+    "langchain-openai (>=0.3.33,<0.4.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
