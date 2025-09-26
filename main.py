@@ -1,26 +1,40 @@
-from fastapi import FastAPI
-from pydantic import BaseModel
-from agent import graph
-
 import os
 from dotenv import load_dotenv
-
-app = FastAPI(title="Route planner demo")
 
 load_dotenv()  # loads .env into os.environ (for dev)
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("Missing OPENAI_API_KEY")
 
-class ChatRequest(BaseModel):
-    input: str
+from fastapi import FastAPI
+from pydantic import BaseModel
+from agent import graph, memory
+
+app = FastAPI(title="Route planner demo")
 
 @app.get("/")
 async def root():
     return {"message": "LangGraph backend is running 🚀"}
 
-@app.post("/chat")
+@app.get("/mem")
+async def return_memory():
+    return memory
+
+class ChatRequest(BaseModel):
+    message: str
+    user_id: str  # optional, for per-user memory
+
+#class ChatResponse(BaseModel):
+#    response: str
+
+@app.post("/chat") #, response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    # LangGraph works by "invoking" the graph with input
-    response = graph.invoke({"input": req.input})
-    return {"output": response["output"]}
+    # Send the user's message as a "user" role
+    config = {"configurable": {"thread_id": req.user_id, "user_id": req.user_id}}
+    result = graph.invoke(
+        {"messages": [{"role": "user", "content": req.message}]},
+        config=config
+    )
+
+    # The last message in the updated state is the agent's reply
+    return result
