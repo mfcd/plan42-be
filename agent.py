@@ -15,5 +15,6 @@ graph = create_react_agent(
     llm,
     [route_validation_tool],
     state_schema=RoutingAgentState,
-    checkpointer=memory
+    checkpointer=memory,
+    debug=False
 )
