@@ -87,6 +87,13 @@ class RoutingAgentState(AgentState):
     precedences: Optional[List[Precedence]]
 
 
+class PrecedenceCycleError(Exception):
+    def __init__(self, cycle: List[str]):
+        self.cycle = cycle
+        message = f"Cycle detected in precedence constraints: {' → '.join(cycle)}"
+        super().__init__(message)
+
+
 def validate_route(
         locations: List[Location],
         tool_call_id: Annotated[str, InjectedToolCallId], 
@@ -119,20 +126,8 @@ def validate_route(
     else:
         is_valid, cycle = check_precedence_validity(precedences)
         if not(is_valid):
-            return {
-                "success": False,
-                "error": """
-                    The constraints show a cycle. 
-                    This means that there are some precedences that cannot be satified in light of others. 
-                    """,
-                "cycle": cycle
-            }
+            raise PrecedenceCycleError(cycle)
 
-    #tm = ToolMessage(
-    #    content="Successfully validated route",
-    #    artifact={"locations": locations, "precedence": precedence},
-    #    tool_call_id=tool_call_id
-    #)
 
     # Return Command with ToolMessage first
     return {"locations": locations, "precedences": precedences},
