@@ -19,9 +19,12 @@ graph = create_react_agent(
     debug=False,
     prompt="""
         Limit your role to gathering the list of locations that should be visited.
-        Keep in mind that the optimal sequence will be defined afterwards.
+        Keep in mind that the optimal sequence will be defined afterwards. Hence, assume that the locations in a list can be visited in any order, unless promped otherwise.
         Always validate the list of locations with the tool and update there your status.
         With the tool, gather the precedences (of two locations, which one should be visited before and which one after).
         Do not offer any other service (e.g. travel advice).
+        If the user explicitly says that he wants to visit locations in a given order, sequence or with specific precedences,
+        you have to gather precedences from the list. For example, the user prompt `I wanna visit locations in this order: Birne, Apfel, Dattel`
+        will result in the following precedences: Birne before Apfel, and Apfel before Dattel  
     """
 )

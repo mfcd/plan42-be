@@ -68,6 +68,29 @@ def check_precedence_validity(precedences: List[Precedence]) -> Tuple[bool, Opti
     return True, None
 
 
+def check_unique_locations(
+    locations: List[Location],
+) -> Tuple[bool, Optional[List[Location]]]:
+    """
+    Checks whether a list of locations contains duplicates.
+    Returns (True, None) if all unique,
+    or (False, [duplicate_locations]) if duplicates are found.
+    """
+    seen = set()
+    duplicates = set()
+
+    for loc in locations:
+        if loc in seen:
+            duplicates.add(loc)
+        else:
+            seen.add(loc)
+
+    if duplicates:
+        return False, list(duplicates)
+    return True, None
+
+
+
 # Input schema
 class Route(BaseModel):
     """Represents a route - a list of destinations to be visited and their precedences"""
@@ -91,6 +114,14 @@ class PrecedenceCycleError(Exception):
     def __init__(self, cycle: List[str]):
         self.cycle = cycle
         message = f"Cycle detected in precedence constraints: {' → '.join(cycle)}"
+        super().__init__(message)
+
+
+class DuplicateLocationsError(Exception):
+    """Raised when duplicate locations are detected in a list."""
+    def __init__(self, duplicates: List[str]):
+        self.duplicates = duplicates
+        message = f"Duplicate locations detected: {', '.join(duplicates)}"
         super().__init__(message)
 
 
@@ -120,7 +151,11 @@ def validate_route(
 
             
     """
-    # Always provide tool_call_id if available
+
+    is_valid, duplicates = check_unique_locations(locations)
+    if not(is_valid):
+        raise DuplicateLocationsError(duplicates)
+
     if precedences is None:
         precedences = []
     else:
