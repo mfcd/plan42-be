@@ -111,6 +111,7 @@ class RoutingAgentState(AgentState):
 
 
 class PrecedenceCycleError(Exception):
+    """Raised when a precedence constraint cannot be satisfied"""
     def __init__(self, cycle: List[str]):
         self.cycle = cycle
         message = f"Cycle detected in precedence constraints: {' → '.join(cycle)}"
