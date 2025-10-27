@@ -108,8 +108,6 @@ def validate_route(
         if not(is_valid):
             raise PrecedenceCycleError(cycle)
 
-
-
     # Return Command with ToolMessage first
     return {
         "locations": locations,
