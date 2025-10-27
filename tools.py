@@ -6,7 +6,7 @@ from langchain_core.tools.structured import StructuredTool
 from langgraph.prebuilt.chat_agent_executor import AgentState
 import pyomo.environ as pyo
 from utils.location import Location, distance
-from utils.precedence import Precedence, check_precedence_validity, check_unique_locations
+from utils.precedence import Precedence, check_precedence_validity, check_unique_locations, check_starting_point_in_precedences
 
 
 # Input schema
@@ -55,6 +55,15 @@ class NoStartingPointError(Exception):
         super().__init__("The route has no starting point")
 
 
+class IncorrectStartingPointInPrecedence(Exception):
+    """Raised when a precedence constraint puts any location before the `starting_point` """
+    def __init__(self, precedence: Precedence):
+        before = precedence.visit_location_before
+        after = precedence.visit_location_after
+        message = f"Cannot visit {before} before {after}, the starting point"
+        super().__init__(message)
+
+
 def validate_route(
         locations: List[Location],
         tool_call_id: Annotated[str, InjectedToolCallId],
@@ -80,9 +89,10 @@ def validate_route(
     }
 
     means that you have to visit Rome before Paris.
-
-            
     """
+
+    if starting_point is None:
+        raise NoStartingPointError
 
     is_valid, duplicates = check_unique_locations(locations)
     if not(is_valid):
@@ -91,12 +101,14 @@ def validate_route(
     if precedences is None:
         precedences = []
     else:
+        is_valid, wrong_precedence = check_starting_point_in_precedences(precedences, starting_point)
+        if not(is_valid):
+            raise IncorrectStartingPointInPrecedence(wrong_precedence)
         is_valid, cycle = check_precedence_validity(precedences)
         if not(is_valid):
             raise PrecedenceCycleError(cycle)
 
-    if starting_point is None:
-        raise NoStartingPointError
+
 
     # Return Command with ToolMessage first
     return {

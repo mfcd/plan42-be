@@ -28,7 +28,7 @@ graph = create_react_agent(
         you have to gather precedences from the list. For example, the user prompt `I wanna visit locations in this order: Birne, Apfel, Dattel`
         will result in the following precedences: Birne before Apfel, and Apfel before Dattel
 
-        You need a starting point. If a user gives a starting point which is not in the list of locations, add it to it.
+        You need a starting point. If a user gives a starting point which is not in the list of locations, add it to the list.
         
         Important:
         If and *only if* the user asks explicitly to find the optimal route or estimate the distance, run `route_solving_tool`.

@@ -9,6 +9,24 @@ class Precedence(BaseModel):
     visit_location_after: Location
 
 
+def check_starting_point_in_precedences(
+        precedences: List[Precedence],
+        starting_point: Location) -> Tuple[bool, Optional[Precedence]]:
+    """
+    Checks whether a list of preferences puts any Location before the starting point.
+    In other words, checks whether the starting point appears as a 'visit_location_after'
+    in any precedence constraint (i.e., some location must be visited before it).
+    
+    Returns:
+        (True, None) if all precedences are fine,
+        (False, precedence) if a precedence violates the starting point constraint
+    """
+    for p in precedences:
+        if p.visit_location_after == starting_point:
+            return False, p  # violation found
+    return True, None  # all good
+
+
 def check_precedence_validity(precedences: List[Precedence]) -> Tuple[bool, Optional[List[Location]]]:
     """
     Checks if the precedence constraints are valid (no cycles).
