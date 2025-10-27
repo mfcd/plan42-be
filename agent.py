@@ -27,6 +27,8 @@ graph = create_react_agent(
         If the user explicitly says that he wants to visit locations in a given order, sequence or with specific precedences,
         you have to gather precedences from the list. For example, the user prompt `I wanna visit locations in this order: Birne, Apfel, Dattel`
         will result in the following precedences: Birne before Apfel, and Apfel before Dattel
+
+        You need a starting point. If a user gives a starting point which is not in the list of locations, add it to it.
         
         Important:
         If and *only if* the user asks explicitly to find the optimal route or estimate the distance, run `route_solving_tool`.

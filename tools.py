@@ -21,6 +21,11 @@ class Route(BaseModel):
         description="Optional: precedences define, for a pair of locations, which one should be visited first"
     )
 
+    starting_point: Location = Field(
+        ...,
+        description="Start location. It must be one of the locations. Ask to fill if not specified."
+    )
+
 
 class RoutingAgentState(AgentState):
     """All the info that will be persisted as state"""
@@ -44,9 +49,16 @@ class DuplicateLocationsError(Exception):
         super().__init__(message)
 
 
+class NoStartingPointError(Exception):
+    """Raised when a route has no starting point."""
+    def __init__(self):
+        super().__init__("The route has no starting point")
+
+
 def validate_route(
         locations: List[Location],
-        tool_call_id: Annotated[str, InjectedToolCallId], 
+        tool_call_id: Annotated[str, InjectedToolCallId],
+        starting_point: Location,
         precedences: Optional[List[Precedence]] = None):
     """
     Validates that a route is correct.
@@ -54,6 +66,7 @@ def validate_route(
     Args:
         - locations: list of locations. 
         - precedences: optional list of precedence rules for locations.
+        - starting_point: out of locations, the starting point
 
     Important:
     The order of locations in the list `locations` does not represent the order they will be visited.
@@ -82,9 +95,15 @@ def validate_route(
         if not(is_valid):
             raise PrecedenceCycleError(cycle)
 
+    if starting_point is None:
+        raise NoStartingPointError
 
     # Return Command with ToolMessage first
-    return {"locations": locations, "precedences": precedences},
+    return {
+        "locations": locations,
+        "precedences": precedences,
+        "starting_point": starting_point
+        },
 
 
 route_validation_tool = StructuredTool.from_function(
@@ -100,65 +119,93 @@ route_validation_tool = StructuredTool.from_function(
 def solve_route(
     locations: List[Location],
     tool_call_id: Annotated[str, InjectedToolCallId],
+    starting_point: Location,
     precedences: Optional[List[Precedence]] = None,
 ):
     """Solve a TSP for the given locations and optional precedence constraints."""
-    from itertools import permutations
-    
     locs = locations
     N = len(locs)
     if N < 2:
         raise ValueError("Need at least 2 locations to solve a TSP.")
+    if starting_point not in locs:
+        raise ValueError(f"Starting point {starting_point} must be in locations.")
 
-    # Build precedence map
-    prec_map = {}
+    # Filter distance matrix to selected locations only
+    dist = {(i, j): distance[i, j] for i in locs for j in locs}
+
+    # Create Pyomo model
+    model = pyo.ConcreteModel()
+    model.L = pyo.Set(initialize=locs)
+    model.x = pyo.Var(model.L, model.L, domain=pyo.Binary)
+
+    # Objective: minimize total travel distance
+    model.obj = pyo.Objective(
+        expr=sum(dist[i,j]*model.x[i,j] for i,j in product(model.L, model.L) if i!=j),
+        sense=pyo.minimize
+    )
+
+    # Each location has exactly one incoming edge
+    model.arrive_once = pyo.Constraint(
+        [j for j in locs if j != starting_point],
+        rule=lambda m,j: sum(m.x[i,j] for i in m.L if i != j) == 1
+        )
+
+    # Position variables for precedence only
     if precedences:
+        model.u = pyo.Var(model.L, domain=pyo.NonNegativeIntegers, bounds=(0, N-1))
+        model.pos_link = pyo.ConstraintList()
+        model.u[starting_point].fix(0)
+        # Link position to edges
+        for i in locs:
+            for j in locs:
+                if i != j:
+                    model.pos_link.add(model.u[j] >= model.u[i] + 1 - 100 * (1 - model.x[i,j]))
+        
+        # Precedence constraints
+        model.prec = pyo.ConstraintList()
         for p in precedences:
             a, b = p.visit_location_before, p.visit_location_after
             if a in locs and b in locs:
-                if a not in prec_map:
-                    prec_map[a] = []
-                prec_map[a].append(b)
-    
-    # Check if a tour satisfies precedence constraints
-    def satisfies_precedence(tour):
-        pos = {loc: i for i, loc in enumerate(tour)}
-        for before, after_list in prec_map.items():
-            for after in after_list:
-                if pos[before] >= pos[after]:
-                    return False
-        return True
-    
-    # Try all permutations starting from first location
-    best_tour = None
-    best_distance = float('inf')
-    
-    start = locs[0]
-    remaining = [loc for loc in locs if loc != start]
-    
-    for perm in permutations(remaining):
-        tour = [start] + list(perm)
+                model.prec.add(model.u[a] + 1 <= model.u[b])
+
+    # Solver
+    if pyo.SolverFactory("glpk").available(exception_flag=False):
+        solver = pyo.SolverFactory("glpk")
+    elif pyo.SolverFactory("cbc").available(exception_flag=False):
+        solver = pyo.SolverFactory("cbc")
+    else:
+        raise RuntimeError("No solver found. Please install GLPK or CBC.")
+
+    result = solver.solve(model, tee=False)
         
-        # Check precedence
-        if prec_map and not satisfies_precedence(tour):
-            continue
-        
-        # Calculate distance
-        total_dist = sum(distance[tour[i], tour[i+1]] for i in range(N-1))
-        total_dist += distance[tour[-1], tour[0]]  # Return to start
-        
-        if total_dist < best_distance:
-            best_distance = total_dist
-            best_tour = tour
-    
-    if best_tour is None:
-        raise RuntimeError("No valid tour found satisfying precedence constraints")
-    
+    if (result.solver.status != pyo.SolverStatus.ok or
+        result.solver.termination_condition != pyo.TerminationCondition.optimal):
+        raise RuntimeError(
+            f"Solver failed: status={result.solver.status}, "
+            f"termination={result.solver.termination_condition}"
+        )
+    # Build edges from the solver solution
+    edges = [(i, j) for i, j in product(locs, locs) if i != j and pyo.value(model.x[i, j]) > 0.5]
+
+    # Build next_stop mapping
+    next_stop = {i: j for i, j in edges}
+    tour = [starting_point]
+    visited = {starting_point}
+    while len(tour) < len(locs):
+        current = tour[-1]
+        next_node = next_stop.get(current)
+        remaining = set(locs) - visited
+        if not next_node or next_node in visited:
+            next_node = remaining.pop()
+        tour.append(next_node)
+        visited.add(next_node)
+
     return {
         "locations": locations,
         "precedences": [p.dict() for p in precedences] if precedences else [],
-        "ordered_route": best_tour,
-        "total_distance": best_distance
+        "ordered_route": tour,
+        "total_distance": pyo.value(model.obj),
+        "positions": {i: pyo.value(model.u[i]) for i in model.L} if precedences else None
     }
 
 
