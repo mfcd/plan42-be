@@ -1,11 +1,13 @@
-from typing import List, Optional
+from typing import List, Optional, Annotated
+from itertools import product
 from pydantic import BaseModel, Field
 from langchain_core.tools import InjectedToolCallId
 from langchain_core.tools.structured import StructuredTool
 from langgraph.prebuilt.chat_agent_executor import AgentState
-from typing import Annotated
-from utils.location import Location
+import pyomo.environ as pyo
+from utils.location import Location, distance
 from utils.precedence import Precedence, check_precedence_validity, check_unique_locations
+
 
 # Input schema
 class Route(BaseModel):
@@ -92,4 +94,80 @@ route_validation_tool = StructuredTool.from_function(
     description="""
         Validate whether the input route (locations, location precedences) is correct.        
         """
+)
+
+
+def solve_route(
+    locations: List[Location],
+    tool_call_id: Annotated[str, InjectedToolCallId],
+    precedences: Optional[List[Precedence]] = None,
+):
+    """Solve a TSP for the given locations and optional precedence constraints."""
+    from itertools import permutations
+    
+    locs = locations
+    N = len(locs)
+    if N < 2:
+        raise ValueError("Need at least 2 locations to solve a TSP.")
+
+    # Build precedence map
+    prec_map = {}
+    if precedences:
+        for p in precedences:
+            a, b = p.visit_location_before, p.visit_location_after
+            if a in locs and b in locs:
+                if a not in prec_map:
+                    prec_map[a] = []
+                prec_map[a].append(b)
+    
+    # Check if a tour satisfies precedence constraints
+    def satisfies_precedence(tour):
+        pos = {loc: i for i, loc in enumerate(tour)}
+        for before, after_list in prec_map.items():
+            for after in after_list:
+                if pos[before] >= pos[after]:
+                    return False
+        return True
+    
+    # Try all permutations starting from first location
+    best_tour = None
+    best_distance = float('inf')
+    
+    start = locs[0]
+    remaining = [loc for loc in locs if loc != start]
+    
+    for perm in permutations(remaining):
+        tour = [start] + list(perm)
+        
+        # Check precedence
+        if prec_map and not satisfies_precedence(tour):
+            continue
+        
+        # Calculate distance
+        total_dist = sum(distance[tour[i], tour[i+1]] for i in range(N-1))
+        total_dist += distance[tour[-1], tour[0]]  # Return to start
+        
+        if total_dist < best_distance:
+            best_distance = total_dist
+            best_tour = tour
+    
+    if best_tour is None:
+        raise RuntimeError("No valid tour found satisfying precedence constraints")
+    
+    return {
+        "locations": locations,
+        "precedences": [p.dict() for p in precedences] if precedences else [],
+        "ordered_route": best_tour,
+        "total_distance": best_distance
+    }
+
+
+route_solving_tool = StructuredTool.from_function(
+    func=solve_route,
+    #args_schema=Route,  # automatically validate inputs
+    name="route_solving_tool",
+    description="""
+        Run only if explicitly instructed by the user.
+        Returns the optimal route and total distance, given a valid route
+    """
 )
