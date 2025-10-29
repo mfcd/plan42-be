@@ -1,5 +1,7 @@
 import os
 from dotenv import load_dotenv
+from typing import Dict
+from fastapi import HTTPException
 
 load_dotenv()  # loads .env into os.environ (for dev)
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -30,9 +32,23 @@ app.add_middleware(
 async def root():
     return {"message": "LangGraph backend is running 🚀"}
 
-@app.get("/mem")
-async def return_memory():
-    return memory
+
+@app.delete("/memory")
+async def flush_all_memory() -> Dict[str, str]:
+    """
+    Flush all memory - clear all checkpoints.
+    """
+    try:
+        checkpoint_count = len(memory.storage)
+        memory.storage.clear()
+        
+        return {
+            "status": "success",
+            "message": f"Flushed all memory ({checkpoint_count} checkpoints cleared)"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error flushing memory: {str(e)}")
+
 
 class ChatRequest(BaseModel):
     message: str
