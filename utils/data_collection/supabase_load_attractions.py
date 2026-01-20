@@ -26,15 +26,18 @@ for file in files:
         attractions = json.load(file)
 
         for attraction in attractions["data"]:
-            a = {
-                "name": attraction["name"],
-                "myswitzerland_id": attraction["identifier"],
-                "photo": attraction.get("photo"),
-                "abstract": attraction.get("abstract"),
-                "url": attraction["url"],
-                "lat": attraction["geo"]["latitude"],
-                "lon": attraction["geo"]["longitude"]
-            }
-            reformatted_attractions.append(a)
+            if "geo" in attraction:
+                a = {
+                    "name": attraction["name"],
+                    "myswitzerland_id": attraction["identifier"],
+                    "photo": attraction.get("photo"),
+                    "abstract": attraction.get("abstract"),
+                    "url": attraction.get("url"),
+                    "lat": attraction["geo"]["latitude"],
+                    "lon": attraction["geo"]["longitude"]
+                }
+                reformatted_attractions.append(a)
 
-
+supa_response = (
+    supabase.table("attractions").insert(reformatted_attractions).execute()
+)
