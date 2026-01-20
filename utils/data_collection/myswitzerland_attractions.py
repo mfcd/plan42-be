@@ -18,6 +18,7 @@ def output_page_as_file(response_json, page:int = 0):
     with open(f"attractions_{page}.json", "w", encoding="utf-8") as f:
         json.dump(response_json, f)
 
+
 def fetch_page(page: int = 0):
     hitsPerPage = 50
     params = {
@@ -29,7 +30,6 @@ def fetch_page(page: int = 0):
         resp = requests.get(BASE_URL, headers=HEADERS, params=params, timeout=30)
         resp.raise_for_status()
         output_page_as_file(resp.json(), page)
-        print
         
     except HTTPError as http_err:
         print(f"HTTP error occurred: {http_err}")  # e.g. 404 Not Found
