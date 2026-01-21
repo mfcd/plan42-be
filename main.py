@@ -1,19 +1,32 @@
 import os
 from dotenv import load_dotenv
 from typing import Dict
-from fastapi import HTTPException
+from fastapi import HTTPException, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from agent import graph, memory
+from utils.location import Location, Attraction
+
 
 load_dotenv()  # loads .env into os.environ (for dev)
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("Missing OPENAI_API_KEY")
 
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from agent import graph, memory
-
 app = FastAPI(title="Route planner demo")
+
+#load location data from supabase
+from supabase import create_client, Client
+import os
+
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
+random_attractions = Attraction.get_random(supabase, count=5)
+
+for a in random_attractions:
+    print(f"{a.name} (ID: {a.id})")
+
 
 origins = [
     "http://localhost:5173",  # default Vite dev server
@@ -55,10 +68,8 @@ class ChatRequest(BaseModel):
     user_id: str  # optional, for per-user memory
     currently_fe_buffered_messages: int
 
-#class ChatResponse(BaseModel):
-#    response: str
 
-@app.post("/chat") #, response_model=ChatResponse)
+@app.post("/chat")
 async def chat(req: ChatRequest):
     # Send the user's message as a "user" role
     config = {"configurable": {"thread_id": req.user_id, "user_id": req.user_id}}
