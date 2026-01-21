@@ -9,6 +9,10 @@ __pycache__/
 # env files
 .env
 
+# files with downloaded json data
+utils/data_collection/attraction_files
+utils/charging_stations_files
+
 # Distribution / packaging
 .Python
 build/

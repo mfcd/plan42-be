@@ -13,10 +13,16 @@ dependencies = [
     "langgraph (>=0.6.7,<0.7.0)",
     "langchain-openai (>=0.3.33,<0.4.0)",
     "pydantic (>=2.11.9,<3.0.0)",
-    "pyomo (>=6.9.5,<7.0.0)"
+    "pyomo (>=6.9.5,<7.0.0)",
+    "supabase (>=2.27.2,<3.0.0)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[dependency-groups]
+dev = [
+    "jupyter (>=1.1.1,<2.0.0)"
+]
