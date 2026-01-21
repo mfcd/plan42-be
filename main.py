@@ -4,7 +4,7 @@ from typing import Dict
 from fastapi import HTTPException, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from agent import graph, memory
+#from agent import graph, memory
 from utils.location import Location, Attraction
 
 
@@ -21,10 +21,17 @@ import os
 
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
-supabase: Client = create_client(url, key)
-random_attractions = Attraction.get_random(supabase, count=5)
+source: str = os.environ.get("LOCATION_SOURCE")
 
-for a in random_attractions:
+if source == "SUPABASE":
+    supabase: Client = create_client(url, key)
+    attractions = Attraction.get_random(supabase, count=10)
+elif source == "FILE":
+    attractions = Attraction.load_list_from_json("cached_attractions.json")
+else:
+    raise RuntimeError("the source of locations should be either SUPABASE or a file")
+
+for a in attractions:
     print(f"{a.name} (ID: {a.id})")
 
 

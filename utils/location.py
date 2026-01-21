@@ -2,6 +2,10 @@ from abc import ABC
 from pydantic import BaseModel, Field, HttpUrl, field_validator
 from typing import List, Optional
 from supabase import Client
+from pydantic import TypeAdapter
+import json
+from pathlib import Path
+from pydantic import TypeAdapter
 
 
 class Location(BaseModel, ABC):
@@ -47,6 +51,32 @@ class Attraction(Location):
         
         # 'cls' refers to the Attraction class itself
         return [cls(**item) for item in response.data]
+    
 
+    @classmethod
+    def save_list_to_json(cls, attractions: list["Attraction"], filename: str = "locations.json"):
+        """
+        Takes a list of Attraction objects and saves them to a JSON file.
+        """
+        # We use a TypeAdapter to handle the list of objects efficiently
+        adapter = TypeAdapter(list["Attraction"])
+        
+        # Convert to JSON bytes (using aliases so it matches your DB/JSON keys)
+        json_data = adapter.dump_json(attractions, by_alias=True, indent=4)
+        
+        with open(filename, "wb") as f:
+            f.write(json_data)
+            
+        print(f"Successfully saved {len(attractions)} items to {filename}")
+    
+    @classmethod
+    def load_list_from_json(cls, filename: str = "locations.json") -> list["Attraction"]:
+        """
+        Reads a JSON file and returns a list of Attraction objects.
+        """
+        with open(filename, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return [cls(**item) for item in data]
+    
 
 distance = None
