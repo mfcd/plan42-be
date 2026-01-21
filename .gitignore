@@ -11,6 +11,7 @@ __pycache__/
 
 # files with downloaded json data
 utils/data_collection/attraction_files
+utils/charging_stations_files
 
 # Distribution / packaging
 .Python
