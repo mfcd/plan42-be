@@ -1,5 +1,5 @@
 from abc import ABC
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
 from typing import List, Optional
 from supabase import Client
 from pydantic import TypeAdapter
@@ -11,6 +11,8 @@ import os
 
 
 class Location(BaseModel, ABC):
+    model_config = ConfigDict(frozen=True)
+    
     id: int = Field(..., description="Unique database identifier")
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")
