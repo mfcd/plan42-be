@@ -5,37 +5,44 @@ from langchain_core.tools import InjectedToolCallId
 from langchain_core.tools.structured import StructuredTool
 from langgraph.prebuilt.chat_agent_executor import AgentState
 import pyomo.environ as pyo
-from utils.location import Location, distance
+from utils.location import Location, LocationDistanceMatrix
 from utils.precedence import Precedence, check_precedence_validity, check_unique_locations, check_starting_point_in_precedences
+from langchain_core.runnables import RunnableConfig
 
 
 # Input schema
 class Route(BaseModel):
     """Represents a route - a list of destinations to be visited and their precedences"""
-    locations: List[Location] = Field(
+    locations: List[int] = Field(
         ...,
-        description="List of shop locations"
+        description="List of location ids that will be visited during the route"
     )
     precedences: List[Precedence] = Field(
         default=[],
-        description="Optional: precedences define, for a pair of locations, which one should be visited first"
+        description="Optional: precedences define, for a pair of location ids, which one should be visited first"
     )
 
-    starting_point: Location = Field(
+    starting_point: int = Field(
         ...,
-        description="Start location. It must be one of the locations. Ask to fill if not specified."
+        description="Start location id. It must be one of the locations in the route. Ask to fill if not specified."
     )
 
 
 class RoutingAgentState(AgentState):
-    """All the info that will be persisted as state"""
-    locations: List[Location]
+    """
+    All the info that will be persisted as state: 
+        - location: the list of location ids that will be part of a route
+        - precendences: the optional list of precedences
+        - the id of the starting point location
+    """
+    locations: List[int]
     precedences: Optional[List[Precedence]]
+    starting_point: int
 
 
 class PrecedenceCycleError(Exception):
     """Raised when a precedence constraint cannot be satisfied"""
-    def __init__(self, cycle: List[str]):
+    def __init__(self, cycle: List[int]):
         self.cycle = cycle
         message = f"Cycle detected in precedence constraints: {' → '.join(cycle)}"
         super().__init__(message)
@@ -43,7 +50,7 @@ class PrecedenceCycleError(Exception):
 
 class DuplicateLocationsError(Exception):
     """Raised when duplicate locations are detected in a list."""
-    def __init__(self, duplicates: List[str]):
+    def __init__(self, duplicates: List[int]):
         self.duplicates = duplicates
         message = f"Duplicate locations detected: {', '.join(duplicates)}"
         super().__init__(message)
@@ -64,16 +71,42 @@ class IncorrectStartingPointInPrecedence(Exception):
         super().__init__(message)
 
 
+def get_available_locations(config: RunnableConfig):
+    """Call this to see which locations are available to be added to a route."""
+    locations = config["configurable"].get("eligible_locations", [])
+    if not locations:
+        return "No locations found."
+    
+    # Return a list of IDs and names
+    # Note: by returning here only id and name, the model has no idea of other properties (e.g. lat, lon)
+    # All the other shit is buried in the configurable
+    return [
+        {"id": loc.id, 
+         "name": getattr(loc, 'name', loc.id)} for loc in locations
+        ]
+
+
+get_available_locations_tool = StructuredTool.from_function(
+    func=get_available_locations,
+    #args_schema=Route,  # automatically validate inputs
+    name="get_available_locations",
+    description="""
+        Run this to get the list of all available locations
+    """
+)
+
 def validate_route(
-        locations: List[Location],
+        locations: List[int],
         tool_call_id: Annotated[str, InjectedToolCallId],
-        starting_point: Location,
+        starting_point: int,
         precedences: Optional[List[Precedence]] = None):
     """
     Validates that a route is correct.
+    This function only uses ids as it only looks at the sequence of ids in the route,
+    and the location ids in the preferences
 
     Args:
-        - locations: list of locations. 
+        - locations: list of location ids. 
         - precedences: optional list of precedence rules for locations.
         - starting_point: out of locations, the starting point
 
@@ -127,36 +160,40 @@ route_validation_tool = StructuredTool.from_function(
 
 
 def solve_route(
-    locations: List[Location],
+    route_locations: List[int],
     tool_call_id: Annotated[str, InjectedToolCallId],
-    starting_point: Location,
-    precedences: Optional[List[Precedence]] = None,
+    starting_point: int,
+    config: RunnableConfig,
+    precedences: Optional[List[Precedence]] = None
 ):
     """Solve a TSP for the given locations and optional precedence constraints."""
-    locs = locations
-    N = len(locs)
+    N = len(route_locations)
     if N < 2:
         raise ValueError("Need at least 2 locations to solve a TSP.")
-    if starting_point not in locs:
-        raise ValueError(f"Starting point {starting_point} must be in locations.")
+    if starting_point not in route_locations:
+        raise ValueError(f"Starting point {starting_point} must be in the route locations.")
 
     # Filter distance matrix to selected locations only
-    dist = {(i, j): distance[i, j] for i in locs for j in locs}
+    #dist = {(i, j): distance[i, j] for i in lolocationscs for j in locs}
+    distance_matrix = config.get("configurable", {}).get("matrix")
+    if not distance_matrix:
+        return "Error: Distance Matrix was not provided in the configuration."
+    dm = distance_matrix.get_distance_matrix_as_dict(route_locations)
 
     # Create Pyomo model
     model = pyo.ConcreteModel()
-    model.L = pyo.Set(initialize=locs)
+    model.L = pyo.Set(initialize=route_locations)
     model.x = pyo.Var(model.L, model.L, domain=pyo.Binary)
 
     # Objective: minimize total travel distance
     model.obj = pyo.Objective(
-        expr=sum(dist[i,j]*model.x[i,j] for i,j in product(model.L, model.L) if i!=j),
+        expr=sum(dm[i,j]*model.x[i,j] for i,j in product(model.L, model.L) if i!=j),
         sense=pyo.minimize
     )
 
     # Each location has exactly one incoming edge
     model.arrive_once = pyo.Constraint(
-        [j for j in locs if j != starting_point],
+        [j for j in route_locations if j != starting_point],
         rule=lambda m,j: sum(m.x[i,j] for i in m.L if i != j) == 1
         )
 
@@ -166,8 +203,8 @@ def solve_route(
         model.pos_link = pyo.ConstraintList()
         model.u[starting_point].fix(0)
         # Link position to edges
-        for i in locs:
-            for j in locs:
+        for i in route_locations:
+            for j in route_locations:
                 if i != j:
                     model.pos_link.add(model.u[j] >= model.u[i] + 1 - 100 * (1 - model.x[i,j]))
         
@@ -175,7 +212,7 @@ def solve_route(
         model.prec = pyo.ConstraintList()
         for p in precedences:
             a, b = p.visit_location_before, p.visit_location_after
-            if a in locs and b in locs:
+            if a in route_locations and b in route_locations:
                 model.prec.add(model.u[a] + 1 <= model.u[b])
 
     # Solver
@@ -195,23 +232,23 @@ def solve_route(
             f"termination={result.solver.termination_condition}"
         )
     # Build edges from the solver solution
-    edges = [(i, j) for i, j in product(locs, locs) if i != j and pyo.value(model.x[i, j]) > 0.5]
+    edges = [(i, j) for i, j in product(route_locations, route_locations) if i != j and pyo.value(model.x[i, j]) > 0.5]
 
     # Build next_stop mapping
     next_stop = {i: j for i, j in edges}
     tour = [starting_point]
     visited = {starting_point}
-    while len(tour) < len(locs):
+    while len(tour) < len(route_locations):
         current = tour[-1]
         next_node = next_stop.get(current)
-        remaining = set(locs) - visited
+        remaining = set(route_locations) - visited
         if not next_node or next_node in visited:
             next_node = remaining.pop()
         tour.append(next_node)
         visited.add(next_node)
 
     return {
-        "locations": locations,
+        "locations": route_locations,
         "precedences": [p.dict() for p in precedences] if precedences else [],
         "ordered_route": tour,
         "total_distance": pyo.value(model.obj),

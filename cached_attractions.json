@@ -1,0 +1,102 @@
+[
+    {
+        "id": 578,
+        "lat": 47.3781822467158,
+        "lon": 8.52693515853921,
+        "name": "Longstreet Bar",
+        "myswitzerland_id": "c81811ec-9184-452a-8761-9bb81362b531",
+        "photo": "https://www.myswitzerland.com/-/media/st/gadmin/images/cities/summer/bars-cafes-restaurants/longstreet-zurich_154352.jpg",
+        "abstract": "As the name suggests, the Longstreet Bar is located right on Zurich’s amusement mile, the Langstrasse. Today, the restaurant is a popular meeting place for the locals. The interior as it was in the past, when girls danced here on the bars, has been retained.",
+        "url": "https://www.myswitzerland.com/en/experiences/longstreet-bar/"
+    },
+    {
+        "id": 497,
+        "lat": 47.1692269881873,
+        "lon": 7.25597436386271,
+        "name": "Frinvillier military facility",
+        "myswitzerland_id": "840d1c43-7ba3-4f8e-81d9-1346ebd7132d",
+        "photo": "https://www.myswitzerland.com/-/media/st/gadmin/images/destinations/summer/huts/fortin_frinvillier_53525.jpg",
+        "abstract": null,
+        "url": "https://www.myswitzerland.com/en/experiences/frinvillier-military-facility/"
+    },
+    {
+        "id": 881,
+        "lat": 46.4022715668181,
+        "lon": 7.77810181983896,
+        "name": "Highly entertaining tobogganing",
+        "myswitzerland_id": "71393acf-2a66-417d-8e16-382e3b89e1bc",
+        "photo": "https://www.myswitzerland.com/-/media/st/gadmin/images/sport/winter/sledge/screen_shot_2013-10-16_at_3_189505.png",
+        "abstract": "The Lötschental valley nestles between an imposing mountain backdrop between the Berne and Valais Alps. And winter-wonderland images are yours for keeps on the run from the Lauchernalp to Wiler.",
+        "url": "https://www.myswitzerland.com/en/experiences/highly-entertaining-tobogganing/"
+    },
+    {
+        "id": 1313,
+        "lat": 46.5502546426629,
+        "lon": 7.76447814587984,
+        "name": "Alpine Farm and Nature Trail Griesalp - Kiental",
+        "myswitzerland_id": "7d928aa2-0385-40df-a0a5-87b7e6f44056",
+        "photo": "https://www.myswitzerland.com/-/media/st/gadmin/images/family/summer/excursions/tafelkarrenhoch_38768.jpg",
+        "abstract": "Twenty markers (made of larch tree wood), small slate roofs and stations with sensory equipment have been installed on existing hiking trails.",
+        "url": "https://www.myswitzerland.com/en/experiences/alpine-farm-and-nature-trail-griesalp-kiental/"
+    },
+    {
+        "id": 1771,
+        "lat": 47.3889402736,
+        "lon": 8.5183201617,
+        "name": "Moods",
+        "myswitzerland_id": "760acd5f-de45-4265-a4ed-70b910467e43",
+        "photo": "https://www.myswitzerland.com/-/media/st/gadmin/images/cities/summer/culture/moods-zurich_154341.jpg",
+        "abstract": "The premier location for jazz, funk, soul and blues.",
+        "url": "https://www.myswitzerland.com/en/experiences/moods/"
+    },
+    {
+        "id": 517,
+        "lat": 46.7274461303,
+        "lon": 7.8641584511,
+        "name": "Snowshoes, moon and fondue",
+        "myswitzerland_id": "825aed0c-5938-41d4-a61e-3eee58d5aa42",
+        "photo": "https://static.stnet.ch/offers/images/c9977838-39b7-43a9-9ea2-0aaae3aad689-o.jpg",
+        "abstract": "Tramp through the night and the snow under the full moon or the new moon in style.",
+        "url": "https://www.myswitzerland.com/en/experiences/snowshoes-moon-and-fondue/"
+    },
+    {
+        "id": 1589,
+        "lat": 46.8057449837697,
+        "lon": 7.15583322251884,
+        "name": "Abbaye de la Maigrauge",
+        "myswitzerland_id": "442e95ac-41b5-4a12-8fd4-11b1a4d4ee63",
+        "photo": "https://www.myswitzerland.com/-/media/st/gadmin/images/attractions/architecture/abbaye_de_la_maigrauge1_42149.jpg",
+        "abstract": "The Cistercian nuns at Maigrauge are ready to offer young women a temporary retreat in their cloister.",
+        "url": "https://www.myswitzerland.com/en/experiences/abbaye-de-la-maigrauge/"
+    },
+    {
+        "id": 699,
+        "lat": 47.345659446868,
+        "lon": 7.76952131087179,
+        "name": "Solarbob Langenbruck",
+        "myswitzerland_id": "96c82d58-6f55-494b-bb1a-01374cef64f3",
+        "photo": "https://www.myswitzerland.com/-/media/st/gadmin/images/destinations/summer/fun/solarbob_40899.jpg",
+        "abstract": "Over a thousand nail-biting metres of track await you: Solarbob is the only sledging run to combine fun and ecology: you are pulled up by a lift powered by the energy of the sun. But don't worry, you can still use the Solarbob when the sun isn't shining. An unforgettable experience.",
+        "url": "https://www.myswitzerland.com/en/experiences/solarbob-langenbruck/"
+    },
+    {
+        "id": 1108,
+        "lat": 46.00401131,
+        "lon": 8.950863728,
+        "name": "Culinary cruise on Lake Lugano",
+        "myswitzerland_id": "bd5b421f-4f97-4179-bea3-6997e743dca6",
+        "photo": "https://static.stnet.ch/offers/images/9565a85b-4bf3-4fdb-a9da-975aa3fafac9-o.jpg",
+        "abstract": null,
+        "url": "https://www.myswitzerland.com/en/experiences/culinary-cruise-on-lake-lugano/"
+    },
+    {
+        "id": 448,
+        "lat": 46.646,
+        "lon": 7.65236,
+        "name": "Photo Spot Niesen",
+        "myswitzerland_id": "d0802a7d-7019-4ed7-a173-e09ea9d41c01",
+        "photo": "https://www.myswitzerland.com/-/media/celum%20connect/2024/10/29/12/02/00/niesen-photo-spot-grand-tour-of-switzerland.jpg",
+        "abstract": "Between the Simmen and Kander valleys, Niesen rises like a pyramid, providing visitors with a view of Spiez Bay, probably the most beautiful in Europe. In addition to being home to the world’s longest staircase (11,674 steps), a funicular covering 1,943 metres (6,375 ft) altitude difference leads to Niesen Kulm, including its mountain lodge, which was founded in 1856. From here it is only a short walk to the 2,362-metre-high summit platform (7,750 ft) with an impressive 360° panorama view, covering the Bernese Alps from lakes Thun and Brienz to the Jura.",
+        "url": "https://www.myswitzerland.com/en/experiences/photo-spot-niesen/"
+    }
+]

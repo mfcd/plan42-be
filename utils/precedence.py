@@ -4,17 +4,22 @@ from pydantic import BaseModel, Field
 from utils.location import Location
 
 class Precedence(BaseModel):
-    """Represents a precedence constraint: one location might need to be visited before another"""
-    visit_location_before: Location
-    visit_location_after: Location
+    """
+        Represents a precedence constraint: one location might need to be visited before another.
+        A precedence is defined by
+        - `visit_location_before` location id, where you have to go 1st
+        - `visit_location_after` location id, the location that will be visited after
+    """
+    visit_location_before: int
+    visit_location_after: int
 
 
 def check_starting_point_in_precedences(
         precedences: List[Precedence],
-        starting_point: Location) -> Tuple[bool, Optional[Precedence]]:
+        starting_point: int) -> Tuple[bool, Optional[Precedence]]:
     """
     Checks whether a list of preferences puts any Location before the starting point.
-    In other words, checks whether the starting point appears as a 'visit_location_after'
+    In other words, checks whether the starting point id appears as a 'visit_location_after'
     in any precedence constraint (i.e., some location must be visited before it).
     
     Returns:
@@ -77,10 +82,10 @@ def check_precedence_validity(precedences: List[Precedence]) -> Tuple[bool, Opti
 
 
 def check_unique_locations(
-    locations: List[Location],
-) -> Tuple[bool, Optional[List[Location]]]:
+    locations: List[int],
+) -> Tuple[bool, Optional[List[id]]]:
     """
-    Checks whether a list of locations contains duplicates.
+    Checks whether a list of location ids (of type int) contains duplicates.
     Returns (True, None) if all unique,
     or (False, [duplicate_locations]) if duplicates are found.
     """
