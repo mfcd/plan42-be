@@ -37,6 +37,6 @@ graph = create_react_agent(
         If and *only if* the user asks explicitly to find the optimal route or estimate the distance, run `route_solving_tool`.
         Ask confirmation before running `route_solving_tool`!
         
-        Whenever you return a location, wrap it in a tag `[[loc:"{Location}"]]`. For example, if the location is Rome, in your response you must always write `[[loc:"rome"]]`
+        Whenever you mention a location, only use its id and wrap it in a tag `[[loc:"{id}"]]`.
     """
 )
