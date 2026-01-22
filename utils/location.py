@@ -134,7 +134,7 @@ class LocationDistanceMatrix:
         return raw_data["distances"]
     
 
-    def get_idx(self, location_id: str) -> int:
+    def get_idx(self, location_id: int) -> int:
         """Public method to retrieve the index of a specific ID."""
         try:
             return self.id_to_index[location_id]
@@ -143,7 +143,7 @@ class LocationDistanceMatrix:
             raise KeyError(f"Location ID '{location_id}' not found!") from exc
 
 
-    def get_sub_matrix(self, subset_locations: List[Location]) -> List[List[float]]:
+    def get_sub_matrix(self, subset_location_ids: List[int]) -> List[List[float]]:
         """
         Generates a distance matrix for a smaller list of locations 
         using the data from the existing larger matrix.
@@ -152,12 +152,12 @@ class LocationDistanceMatrix:
             raise ValueError("Distance matrix is empty. Load or fetch data first.")
 
         new_matrix = []
-        for row_loc in subset_locations:
-            row_idx = self.get_idx(row_loc.id)
+        for row_loc in subset_location_ids:
+            row_idx = self.get_idx(row_loc)
             new_row = []
             
-            for col_loc in subset_locations:
-                col_idx = self.get_idx(col_loc.id)
+            for col_loc in subset_location_ids:
+                col_idx = self.get_idx(col_loc)
                 # Pluck the distance from the original 2D list
                 new_row.append(self.distance_matrix_full[row_idx][col_idx])
             
@@ -165,9 +165,9 @@ class LocationDistanceMatrix:
             
         return new_matrix
     
-    def get_distance_matrix_as_dict(self, subset_locations: List[Location]) -> Dict[Tuple[Location, Location], float]:
+    def get_distance_matrix_as_dict(self, subset_locations: List[int]) -> Dict[Tuple[int, int], float]:
         """
-        Returns a dictionary mapping (Location, Location) tuples to distances.
+        Returns a dictionary mapping (id, id) tuples to distances.
         Ensures the diagonal (self-to-self) is 0.
         """
         sub_list = self.get_sub_matrix(subset_locations)
