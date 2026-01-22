@@ -4,8 +4,8 @@ from typing import Dict
 from fastapi import HTTPException, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-#from agent import graph, memory
-from utils.location import Location, Attraction
+from utils.location import Location, Attraction, LocationDistanceMatrix
+from supabase import create_client, Client
 
 
 load_dotenv()  # loads .env into os.environ (for dev)
@@ -13,17 +13,18 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("Missing OPENAI_API_KEY")
 
+from agent import graph, memory
+
 app = FastAPI(title="Route planner demo")
 
-#load location data from supabase
-from supabase import create_client, Client
-import os
-
-url: str = os.environ.get("SUPABASE_URL")
-key: str = os.environ.get("SUPABASE_KEY")
+#########################################################
+#load location data from supabase or from a file
 source: str = os.environ.get("LOCATION_SOURCE")
+#########################################################
 
 if source == "SUPABASE":
+    url: str = os.environ.get("SUPABASE_URL")
+    key: str = os.environ.get("SUPABASE_KEY")
     supabase: Client = create_client(url, key)
     attractions = Attraction.get_random(supabase, count=10)
 elif source == "FILE":
@@ -31,9 +32,8 @@ elif source == "FILE":
 else:
     raise RuntimeError("the source of locations should be either SUPABASE or a file")
 
-for a in attractions:
-    print(f"{a.name} (ID: {a.id})")
-
+from utils.location import LocationDistanceMatrix
+distance_matrix = LocationDistanceMatrix(attractions)
 
 origins = [
     "http://localhost:5173",  # default Vite dev server
@@ -79,7 +79,14 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 async def chat(req: ChatRequest):
     # Send the user's message as a "user" role
-    config = {"configurable": {"thread_id": req.user_id, "user_id": req.user_id}}
+    config = {
+        "configurable": {
+            "thread_id": req.user_id, 
+            "user_id": req.user_id,
+            "matrix": distance_matrix,
+            "eligible_locations": attractions
+        }}
+
     result = graph.invoke(
         {"messages": [
             {"role": "user", "content": req.message},
@@ -87,6 +94,6 @@ async def chat(req: ChatRequest):
         config=config,
         return_intermediate_steps=True
     )
-    new_messages = result["messages"][req.currently_fe_buffered_messages:]
+    #new_messages = result["messages"][req.currently_fe_buffered_messages:]
     # The last message in the updated state is the agent's reply
     return result
