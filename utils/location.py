@@ -1,6 +1,6 @@
 from abc import ABC
 from pydantic import BaseModel, Field, HttpUrl, field_validator, ConfigDict
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
 from supabase import Client
 from pydantic import TypeAdapter
 import json
@@ -164,3 +164,21 @@ class LocationDistanceMatrix:
             new_matrix.append(new_row)
             
         return new_matrix
+    
+    def get_distance_matrix_as_dict(self, subset_locations: List[Location]) -> Dict[Tuple[Location, Location], float]:
+        """
+        Returns a dictionary mapping (Location, Location) tuples to distances.
+        Ensures the diagonal (self-to-self) is 0.
+        """
+        sub_list = self.get_sub_matrix(subset_locations)
+        dist_dict = {}
+        
+        for i, loc_i in enumerate(subset_locations):
+            for j, loc_j in enumerate(subset_locations):
+                # Mapbox usually returns 0 for the diagonal, but we enforce it here
+                if i == j:
+                    dist_dict[(loc_i, loc_j)] = 0.0
+                else:
+                    dist_dict[(loc_i, loc_j)] = sub_list[i][j]
+                    
+        return dist_dict

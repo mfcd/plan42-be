@@ -13,30 +13,36 @@ from langchain_core.runnables import RunnableConfig
 # Input schema
 class Route(BaseModel):
     """Represents a route - a list of destinations to be visited and their precedences"""
-    locations: List[Location] = Field(
+    locations: List[int] = Field(
         ...,
-        description="List of shop locations"
+        description="List of location ids that will be visited during the route"
     )
     precedences: List[Precedence] = Field(
         default=[],
-        description="Optional: precedences define, for a pair of locations, which one should be visited first"
+        description="Optional: precedences define, for a pair of location ids, which one should be visited first"
     )
 
-    starting_point: Location = Field(
+    starting_point: int = Field(
         ...,
-        description="Start location. It must be one of the locations. Ask to fill if not specified."
+        description="Start location id. It must be one of the locations in the route. Ask to fill if not specified."
     )
 
 
 class RoutingAgentState(AgentState):
-    """All the info that will be persisted as state"""
-    locations: List[Location]
+    """
+    All the info that will be persisted as state: 
+        - location: the list of location ids that will be part of a route
+        - precendences: the optional list of precedences
+        - the id of the starting point location
+    """
+    locations: List[int]
     precedences: Optional[List[Precedence]]
+    starting_point: int
 
 
 class PrecedenceCycleError(Exception):
     """Raised when a precedence constraint cannot be satisfied"""
-    def __init__(self, cycle: List[str]):
+    def __init__(self, cycle: List[int]):
         self.cycle = cycle
         message = f"Cycle detected in precedence constraints: {' → '.join(cycle)}"
         super().__init__(message)
@@ -44,7 +50,7 @@ class PrecedenceCycleError(Exception):
 
 class DuplicateLocationsError(Exception):
     """Raised when duplicate locations are detected in a list."""
-    def __init__(self, duplicates: List[str]):
+    def __init__(self, duplicates: List[int]):
         self.duplicates = duplicates
         message = f"Duplicate locations detected: {', '.join(duplicates)}"
         super().__init__(message)
@@ -72,7 +78,12 @@ def get_available_locations(config: RunnableConfig):
         return "No locations found."
     
     # Return a list of IDs and names
-    return [{"id": loc.id, "name": getattr(loc, 'name', loc.id)} for loc in locations]
+    # Note: by returning here only id and name, the model has no idea of other properties (e.g. lat, lon)
+    # All the other shit is buried in the configurable
+    return [
+        {"id": loc.id, 
+         "name": getattr(loc, 'name', loc.id)} for loc in locations
+        ]
 
 
 get_available_locations_tool = StructuredTool.from_function(
@@ -85,15 +96,17 @@ get_available_locations_tool = StructuredTool.from_function(
 )
 
 def validate_route(
-        locations: List[Location],
+        locations: List[int],
         tool_call_id: Annotated[str, InjectedToolCallId],
-        starting_point: Location,
+        starting_point: int,
         precedences: Optional[List[Precedence]] = None):
     """
     Validates that a route is correct.
+    This function only uses ids as it only looks at the sequence of ids in the route,
+    and the location ids in the preferences
 
     Args:
-        - locations: list of locations. 
+        - locations: list of location ids. 
         - precedences: optional list of precedence rules for locations.
         - starting_point: out of locations, the starting point
 
@@ -147,9 +160,9 @@ route_validation_tool = StructuredTool.from_function(
 
 
 def solve_route(
-    route_locations: List[Location],
+    route_locations: List[int],
     tool_call_id: Annotated[str, InjectedToolCallId],
-    starting_point: Location,
+    starting_point: int,
     config: RunnableConfig,
     precedences: Optional[List[Precedence]] = None
 ):
@@ -165,7 +178,7 @@ def solve_route(
     distance_matrix = config.get("configurable", {}).get("matrix")
     if not distance_matrix:
         return "Error: Distance Matrix was not provided in the configuration."
-    dm = distance_matrix.get_sub_matrix(route_locations)
+    dm = distance_matrix.get_distance_matrix_as_dict(route_locations)
 
     # Create Pyomo model
     model = pyo.ConcreteModel()
