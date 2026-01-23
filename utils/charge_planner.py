@@ -1,7 +1,7 @@
 from typing import List, Optional
 from utils.location import LocationDistanceMatrix
 
-class StopPlanner():
+class ChargePlanner():
    def __init__(
        self,
        ordered_route: List[int],
@@ -26,7 +26,7 @@ class StopPlanner():
             i += 1
          else:
             break
-      return i-1
+      return self.ordered_route[i-1]
       
 
 

@@ -85,7 +85,7 @@ class Attraction(Location):
     
 
 class LocationDistanceMatrix:
-    def __init__(self, locations: List[Location]):
+    def __init__(self, locations: List[Location], filename="cached_distances.json"):
         self.locations: List[Location] = locations
         # Create a lookup table to translate ID strings to matrix indices
         self.id_to_index = {loc.id: i for i, loc in enumerate(locations)}
@@ -93,7 +93,7 @@ class LocationDistanceMatrix:
         if get_from_mapbox_or_file=="MAPBOX":
             self.distance_matrix_full: List[List[float]] = self._get_matrix_from_mapbox()
         elif get_from_mapbox_or_file=="FILE":
-            self.distance_matrix_full: List[List[float]] = self._get_matrix_from_file()
+            self.distance_matrix_full: List[List[float]] = self._get_matrix_from_file(filename)
         else:
             raise ValueError("Oh no the DISTANCES_SOURCE env variable should be either MAPBOX or FILE")
 
@@ -109,6 +109,7 @@ class LocationDistanceMatrix:
         :param profile: mapbox/driving, mapbox/walking, mapbox/cycling
         :param use_curbside: If True, forces arrival on the right side of the road.
         """
+        raise ValueError("you should not be there")
         access_token = os.getenv("MAPBOX_TOKEN")
         if not access_token:
             raise ValueError("MAPBOX_TOKEN not found in .env file.")
@@ -125,10 +126,10 @@ class LocationDistanceMatrix:
         response.raise_for_status()
         distances = response.json()["distances"]
         assert len(distances) == len(self.locations)
-        return 
-    
+        return false
+      
 
-    def _get_matrix_from_file(self, filename="cached_distances.json"):
+    def _get_matrix_from_file(self, filename):
         with open(filename, "r", encoding="utf-8") as f:
             raw_data = json.load(f)
         return raw_data["distances"]
@@ -141,6 +142,12 @@ class LocationDistanceMatrix:
         except KeyError as exc:
             # 'from exc' preserves the original traceback
             raise KeyError(f"Location ID '{location_id}' not found!") from exc
+
+
+    def get_distance_between_ids(self, id1: int, id2: int):
+        idx1 = self.get_idx(id1)
+        idx2 = self.get_idx(id2)
+        return self.distance_matrix_full[idx1][idx2]
 
 
     def get_sub_matrix(self, subset_location_ids: List[int]) -> List[List[float]]:
