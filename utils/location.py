@@ -172,6 +172,7 @@ class LocationDistanceMatrix:
             
         return new_matrix
     
+    
     def get_distance_matrix_as_dict(self, subset_locations: List[int]) -> Dict[Tuple[int, int], float]:
         """
         Returns a dictionary mapping (id, id) tuples to distances.

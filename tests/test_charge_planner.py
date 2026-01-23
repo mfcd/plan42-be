@@ -9,16 +9,10 @@ def test_charge_planner_real_file():
     dm = LocationDistanceMatrix(attractions, filename="cached_distances.json")
     print(dm)
 
-    # 2. Your specific test case
     ordered_route = [578, 497, 881]
-    tank_limit_meters = 260000 
-    
-    # 3. Run the planner
-    planner = ChargePlanner(ordered_route, tank_limit_meters)
-    result = planner.find_last_location_before_tank(dm)
-    
-    # 4. Print results (visible if you run pytest with -s)
-    print(f"\nLast stop before empty: {result}")
-    
-    # Optional: Verify against a known expected value in your file
-    # assert result == 497
+    tank_limit_meters = [0, 116000, 260000]
+    expected_results = [578, 497, 881]
+    for i in range(3):
+        planner = ChargePlanner(ordered_route, tank_limit_meters[i])
+        result = planner.find_last_location_before_tank(dm)
+        assert result == expected_results[i]

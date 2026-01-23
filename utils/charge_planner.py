@@ -15,6 +15,10 @@ class ChargePlanner():
 
 
    def find_last_location_before_tank(self, distances: LocationDistanceMatrix) -> int:
+      """
+         Find the last location before fuel runs out.
+         Returns the id [int].
+      """
       i = 1
       distance_travelled = 0
       while i < len(self.ordered_route):
