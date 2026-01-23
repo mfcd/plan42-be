@@ -99,8 +99,8 @@ def validate_route(
     and a location to visit afterwards (visit_location_after). Example:
     
     { 
-        visit_location_before: "Rome",
-        visit_location_after: "Paris"
+        visit_location_before: 111,
+        visit_location_after: 777"
     }
 
     means that you have to visit Rome before Paris.
