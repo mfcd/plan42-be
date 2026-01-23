@@ -5,6 +5,7 @@ from fastapi import HTTPException, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from utils.location import Location, Attraction, LocationDistanceMatrix
+from utils.local_directions_cache import LocalDirectionsCache
 from supabase import create_client, Client
 
 
@@ -17,26 +18,20 @@ from agent import graph, memory
 
 app = FastAPI(title="Route planner demo")
 
-#########################################################
-#load location data from supabase or from a file
-source: str = os.environ.get("LOCATION_SOURCE")
-#########################################################
-
-if source == "SUPABASE":
+source: str = os.environ.get("BOOT_DATA_FROM")
+if source == "LIVE":
     url: str = os.environ.get("SUPABASE_URL")
     key: str = os.environ.get("SUPABASE_KEY")
     supabase: Client = create_client(url, key)
     attractions = Attraction.get_random(supabase, count=10)
+    #TODO: get distance matrix
+    #TODO: initialize directions
 elif source == "FILE":
     attractions = Attraction.load_list_from_json("cached_attractions.json")
+    distance_matrix = LocationDistanceMatrix(attractions, filename="cached_distances.json")
+    directions_cache = LocalDirectionsCache()
 else:
-    raise RuntimeError("the source of locations should be either SUPABASE or a file")
-
-from utils.location import LocationDistanceMatrix
-distance_matrix = LocationDistanceMatrix(attractions)
-
-from utils.local_directions_cache import LocalDirectionsCache
-directions_cache = LocalDirectionsCache()
+    raise RuntimeError("BOOT_DATA_FROM should be either SUPABASE or a file")
 
 origins = [
     "http://localhost:5173",  # default Vite dev server

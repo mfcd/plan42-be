@@ -85,18 +85,17 @@ class Attraction(Location):
     
 
 class LocationDistanceMatrix:
-    def __init__(self, locations: List[Location], filename="cached_distances.json"):
+    def __init__(self,
+                 locations: List[Location],
+                 filename=None
+        ):
         self.locations: List[Location] = locations
         # Create a lookup table to translate ID strings to matrix indices
         self.id_to_index = {loc.id: i for i, loc in enumerate(locations)}
-        get_from_mapbox_or_file = os.getenv("DISTANCES_SOURCE")
-        if get_from_mapbox_or_file=="MAPBOX":
+        if filename is None: 
             self.distance_matrix_full: List[List[float]] = self._get_matrix_from_mapbox()
-        elif get_from_mapbox_or_file=="FILE":
-            self.distance_matrix_full: List[List[float]] = self._get_matrix_from_file(filename)
         else:
-            raise ValueError("Oh no the DISTANCES_SOURCE env variable should be either MAPBOX or FILE")
-
+            self.distance_matrix_full: List[List[float]] = self._get_matrix_from_file(filename)
 
     def _get_coords_string(self) -> str:
         """Formats locations into the Mapbox lng,lat;lng,lat format."""
@@ -172,7 +171,7 @@ class LocationDistanceMatrix:
             
         return new_matrix
     
-    
+
     def get_distance_matrix_as_dict(self, subset_locations: List[int]) -> Dict[Tuple[int, int], float]:
         """
         Returns a dictionary mapping (id, id) tuples to distances.
