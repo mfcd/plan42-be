@@ -13,6 +13,6 @@ def test_charge_planner_real_file():
     tank_limit_meters = [0, 116000, 260000]
     expected_results = [578, 497, 881]
     for i in range(3):
-        planner = ChargePlanner(ordered_route, tank_limit_meters[i])
-        result = planner.find_last_location_before_tank(dm)
+        planner = ChargePlanner(ordered_route, tank_limit_meters[i], dm)
+        result = planner.find_last_location_before_tank()
         assert result == expected_results[i]

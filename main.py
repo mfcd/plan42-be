@@ -33,6 +33,8 @@ elif source == "FILE":
 else:
     raise RuntimeError("BOOT_DATA_FROM should be either SUPABASE or a file")
 
+
+
 origins = [
     "http://localhost:5173",  # default Vite dev server
     "http://127.0.0.1:5173"
