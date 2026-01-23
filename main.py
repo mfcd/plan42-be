@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from typing import Dict
-from fastapi import HTTPException, FastAPI
+from fastapi import HTTPException, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from utils.location import Location, Attraction, LocationDistanceMatrix
@@ -35,6 +35,9 @@ else:
 from utils.location import LocationDistanceMatrix
 distance_matrix = LocationDistanceMatrix(attractions)
 
+from utils.local_directions_cache import LocalDirectionsCache
+directions_cache = LocalDirectionsCache()
+
 origins = [
     "http://localhost:5173",  # default Vite dev server
     "http://127.0.0.1:5173"
@@ -51,6 +54,22 @@ app.add_middleware(
 @app.get("/")
 async def root():
     return {"message": "LangGraph backend is running 🚀"}
+
+
+@app.get("/directions")
+async def get_directions(
+    origin_id: int = Query(..., description="The ID of the starting location"),
+    destination_id: int = Query(..., description="The ID of the destination location")
+    ):
+
+    cached_data = directions_cache.get(origin_id, destination_id)
+    if cached_data:
+        return {"source": "cache", "data": cached_data}
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to fetch directions for {origin_id}-{destination_id}"
+        )
 
 
 @app.delete("/memory")

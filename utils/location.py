@@ -109,9 +109,9 @@ class LocationDistanceMatrix:
         :param profile: mapbox/driving, mapbox/walking, mapbox/cycling
         :param use_curbside: If True, forces arrival on the right side of the road.
         """
-        access_token = os.getenv("MAPBOX_ACCESS_TOKEN")
+        access_token = os.getenv("MAPBOX_TOKEN")
         if not access_token:
-            raise ValueError("MAPBOX_ACCESS_TOKEN not found in .env file.")
+            raise ValueError("MAPBOX_TOKEN not found in .env file.")
         url = f"https://api.mapbox.com/directions-matrix/v1/{profile}/{self._get_coords_string()}"
         params = {
             "access_token": access_token,
