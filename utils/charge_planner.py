@@ -18,7 +18,7 @@ class ChargePlanner():
          raise ValueError("StopPlanner requires at least two locations (incl start point)")
       self.max_mileage = max_mileage
       self.distances = distances
-      self.directions = directions_cache
+      self.directions_cache = directions_cache
    
    def get_cumulated_distance_until_location(self, location:int):
       location_idx = self.ordered_route.index(location)
@@ -58,11 +58,11 @@ class ChargePlanner():
       max_reach_location = self.find_last_location_before_tank()
       max_reach_location_idx = self.ordered_route.index(max_reach_location)
 
-      if max_reach_location == len(self.ordered_route):
+      if max_reach_location_idx == len(self.ordered_route) - 1:
          return {
             "lat": None,
             "lon": None,
-            "status": "Reached endpoint - no stop is necessary"
+            "reached_endpoint": True,
          }
       else:
          # calculate much distance has been covered from the start point to the last location
@@ -72,15 +72,23 @@ class ChargePlanner():
          # check if the current direction tuple (max reach, and the following) is cached
          next_location_on_route_idx = max_reach_location_idx + 1
          next_location = self.ordered_route[next_location_on_route_idx]
-         d = self.directions.get(max_reach_location, next_location)
-         if d is not None:
-            raise ValueError("d not in cache")
+         d = self.directions_cache.get(max_reach_location, next_location)
+         if d is None:
+            raise ValueError(f"{max_reach_location},{next_location} not in cache")
          geojson_geometry = d["routes"][0]["geometry"]
          line = LineString(geojson_geometry['coordinates'])
          total_length = line.length
          ratio = remaining_mileage / total_length
          point = line.interpolate(ratio, normalized=True)
-         print(f"{point.y},{point.x}")     
+         return {
+            "lat": point.y,
+            "lon": point.x,
+            "reached_endpoint": False,
+            "status": {
+               "remaining_mileage_from_last_location_reached": remaining_mileage,
+               "max_reach_location": max_reach_location
+            }
+         }
 
 
 
