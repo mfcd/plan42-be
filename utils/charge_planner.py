@@ -1,12 +1,16 @@
 from typing import List, Optional
 from utils.location import LocationDistanceMatrix
+from utils.local_directions_cache import LocalDirectionsCache
+from shapely.geometry import LineString
+
 
 class ChargePlanner():
    def __init__(
        self,
        ordered_route: List[int],
        max_mileage: float,
-       distances: LocationDistanceMatrix
+       distances: LocationDistanceMatrix,
+       directions_cache: LocalDirectionsCache
     ):
       if len(ordered_route) >= 2:
          self.ordered_route = ordered_route
@@ -14,7 +18,8 @@ class ChargePlanner():
          raise ValueError("StopPlanner requires at least two locations (incl start point)")
       self.max_mileage = max_mileage
       self.distances = distances
-
+      self.directions = directions_cache
+   
    def get_cumulated_distance_until_location(self, location:int):
       location_idx = self.ordered_route.index(location)
       if location_idx == 0:
@@ -49,10 +54,33 @@ class ChargePlanner():
       return self.ordered_route[i-1]
    
    def find_coords_of_max_mileage_reach(self):
+      # find the last location you can reach with the charge
       max_reach_location = self.find_last_location_before_tank()
-      distance_covered_until_last_location_reached = self.get_cumulated_distance_until_location(max_reach_location)
-      remaining_mileage = self.max_mileage - distance_covered_until_last_location_reached
-      
+      max_reach_location_idx = self.ordered_route.index(max_reach_location)
+
+      if max_reach_location == len(self.ordered_route):
+         return {
+            "lat": None,
+            "lon": None,
+            "status": "Reached endpoint - no stop is necessary"
+         }
+      else:
+         # calculate much distance has been covered from the start point to the last location
+         distance_covered_until_last_location_reached = self.get_cumulated_distance_until_location(max_reach_location)
+         # calculate how much mileage is left since the last location
+         remaining_mileage = self.max_mileage - distance_covered_until_last_location_reached
+         # check if the current direction tuple (max reach, and the following) is cached
+         next_location_on_route_idx = max_reach_location_idx + 1
+         next_location = self.ordered_route[next_location_on_route_idx]
+         d = self.directions.get(max_reach_location, next_location)
+         if d is not None:
+            raise ValueError("d not in cache")
+         geojson_geometry = d["routes"][0]["geometry"]
+         line = LineString(geojson_geometry['coordinates'])
+         total_length = line.length
+         ratio = remaining_mileage / total_length
+         point = line.interpolate(ratio, normalized=True)
+         print(f"{point.y},{point.x}")     
 
 
 
