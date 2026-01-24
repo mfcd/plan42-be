@@ -77,8 +77,8 @@ class ChargePlanner():
             raise ValueError(f"{max_reach_location},{next_location} not in cache")
          geojson_geometry = d["routes"][0]["geometry"]
          line = LineString(geojson_geometry['coordinates'])
-         total_length = line.length
-         ratio = remaining_mileage / total_length
+         distance_between_locations = d["routes"][0]["distance"]
+         ratio = remaining_mileage / distance_between_locations
          point = line.interpolate(ratio, normalized=True)
          return {
             "lat": point.y,

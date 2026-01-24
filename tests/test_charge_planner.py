@@ -48,10 +48,9 @@ def test_get_cumulated_distance_until_location(setup_data):
     assert total_distance_covered_manual == total_distance_covered_
 
 
-def test_find_coords_of_max_mileage_reach(setup_data):
+def test_find_coords_of_max_mileage_reach_easy(setup_data):
     attractions, dm, directions_cache = setup_data
     ordered_route = [578, 497]
-
     mileage = 1.0
     planner = ChargePlanner(ordered_route, mileage, dm, directions_cache)
     coords_max_reach = planner.find_coords_of_max_mileage_reach()
@@ -59,9 +58,33 @@ def test_find_coords_of_max_mileage_reach(setup_data):
     assert 578 == coords_max_reach["status"]["max_reach_location"]
     assert coords_max_reach["reached_endpoint"] == False
 
+
+def test_find_coords_of_max_mileage_gets_to_endpoint(setup_data):
+    attractions, dm, directions_cache = setup_data
+    ordered_route = [578, 497]
     mileage = 116000.0
     planner = ChargePlanner(ordered_route, mileage, dm, directions_cache)
     max_reach_location = planner.find_last_location_before_tank()
     assert max_reach_location == 497
     coords_max_reach = planner.find_coords_of_max_mileage_reach()
-    assert coords_max_reach["reached_endpoint"] == True
+    assert coords_max_reach["reached_endpoint"] is True
+
+
+def test_coordinates_with_geometry(setup_data):
+    attractions, dm, directions_cache = setup_data
+    #Attraction(id=578, lat=47.3781822467158, lon=8.52693515853921)
+    #Attraction(id=497, lat=47.1692269881873, lon=7.25597436386271)
+    ordered_route = [578, 497]
+    # Check coords after 90km
+    mileage = 90000.0
+    planner = ChargePlanner(ordered_route, mileage, dm, directions_cache)
+    coords_max_reach = planner.find_coords_of_max_mileage_reach()
+    assert coords_max_reach["reached_endpoint"] == False
+    assert coords_max_reach["lat"] is not None
+    assert coords_max_reach["lon"] is not None
+    assert coords_max_reach["status"]["remaining_mileage_from_last_location_reached"] == 90000
+    # Expected output : 47.195379291532774, 7.5501459246582945
+    # Corresponding to Erlenweg 23, 4528 Zuchwil
+    # 91km from Longstreet bar (id=578)
+    assert coords_max_reach["lat"] == pytest.approx(47.19537929153277)
+    assert coords_max_reach["lon"] == pytest.approx(7.550145924658294)
