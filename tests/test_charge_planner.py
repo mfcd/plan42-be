@@ -14,7 +14,6 @@ def setup_data():
     return attractions, dm, directions_cache
 
 
-
 def test_charge_planner_real_file(setup_data):
     attractions, dm, directions_cache = setup_data
     print(dm)
@@ -26,3 +25,19 @@ def test_charge_planner_real_file(setup_data):
         planner = ChargePlanner(ordered_route, tank_limit_meters[i], dm, directions_cache)
         result = planner.find_last_location_before_tank()
         assert result == expected_results[i]
+
+
+def test_get_cumulated_distance_until_location(setup_data):
+    attractions, dm, directions_cache = setup_data
+    ordered_route = [578, 497, 881]
+
+    total_distance_covered_manual = 0
+    for i in range(len(ordered_route)-1):
+        total_distance_covered_manual += dm.get_distance_between_ids(
+            ordered_route[i],
+            ordered_route[i+1]
+            )
+    
+    planner = ChargePlanner(ordered_route, 1, dm, directions_cache)
+    total_distance_covered_ = planner.get_cumulated_distance_until_location(881)
+    assert total_distance_covered_manual == total_distance_covered_
