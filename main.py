@@ -1,20 +1,17 @@
 import os
-from dotenv import load_dotenv
 from typing import Dict
-from fastapi import HTTPException, FastAPI, Query
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
 from utils.location import Location, Attraction, LocationDistanceMatrix
 from utils.local_directions_cache import LocalDirectionsCache
+from dotenv import load_dotenv
+from fastapi import HTTPException, FastAPI, Query
+from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
-
+from agent import graph, memory
 
 load_dotenv()  # loads .env into os.environ (for dev)
 openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("Missing OPENAI_API_KEY")
-
-from agent import graph, memory
 
 app = FastAPI(title="Route planner demo")
 
