@@ -116,7 +116,7 @@ async def flush_all_memory() -> Dict[str, str]:
             "message": f"Flushed all memory ({checkpoint_count} checkpoints cleared)"
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error flushing memory: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error flushing memory: {str(e)}") from e
 
 
 class ChatRequest(BaseModel):
