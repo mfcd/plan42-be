@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 from typing import Dict
 from utils.location import Location, Attraction, LocationDistanceMatrix
 from utils.local_directions_cache import LocalDirectionsCache
-from utils.charge_planner import ChargePlanner, RouteRequest
+from utils.charge_planner import ChargePlanner, RouteRequest, CoordsMaxMileageReach
+from utils.charging_station import ChargingStation
 from fastapi import HTTPException, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
@@ -18,11 +19,11 @@ if not openai_api_key:
 app = FastAPI(title="Route planner demo")
 from agent import graph, memory
 
+url: str = os.environ.get("SUPABASE_URL")
+key: str = os.environ.get("SUPABASE_KEY")
+supabase: Client = create_client(url, key)
 source: str = os.environ.get("BOOT_DATA_FROM")
 if source == "LIVE":
-    url: str = os.environ.get("SUPABASE_URL")
-    key: str = os.environ.get("SUPABASE_KEY")
-    supabase: Client = create_client(url, key)
     attractions = Attraction.get_random(supabase, count=10)
     distance_matrix = LocationDistanceMatrix(attractions)
     #TODO: initialize directions
@@ -32,6 +33,13 @@ elif source == "FILE":
     directions_cache = LocalDirectionsCache()
 else:
     raise RuntimeError("BOOT_DATA_FROM should be either SUPABASE or a file")
+
+req = supabase.rpc('get_nearest_chargers', {
+            'target_lat': 47.195379291532774, 
+            'target_lon': 7.5501459246582945, 
+            'n_count': 5
+        }).execute()
+
 
 origins = [
     "http://localhost:5173",  # default Vite dev server
@@ -60,12 +68,17 @@ async def plan_route(request: RouteRequest):
             directions_cache
             )
         
-        find_stop = planner.find_coords_of_max_mileage_reach()
-        
+        planned_stop: CoordsMaxMileageReach = planner.find_coords_of_max_mileage_reach()
+        charging_stations_on_route = ChargingStation.find_by_isochrones(
+            planned_stop.lat, 
+            planned_stop.lon,
+            supabase=supabase
+        )
 
         return {
             "status": "success",
-            "stop": find_stop
+            "stop": planned_stop,
+            "charging_stations_on_route": charging_stations_on_route
         }
 
     except ValueError as ve:
@@ -74,9 +87,11 @@ async def plan_route(request: RouteRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error") from e
 
+
 @app.get("/")
 async def root():
     return {"message": "LangGraph backend is running 🚀"}
+
 
 @app.get("/directions")
 async def get_directions(
