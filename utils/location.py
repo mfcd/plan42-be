@@ -108,7 +108,6 @@ class LocationDistanceMatrix:
         :param profile: mapbox/driving, mapbox/walking, mapbox/cycling
         :param use_curbside: If True, forces arrival on the right side of the road.
         """
-        raise ValueError("you should not be there")
         access_token = os.getenv("MAPBOX_TOKEN")
         if not access_token:
             raise ValueError("MAPBOX_TOKEN not found in .env file.")
@@ -125,7 +124,7 @@ class LocationDistanceMatrix:
         response.raise_for_status()
         distances = response.json()["distances"]
         assert len(distances) == len(self.locations)
-        return false
+        return distances
       
 
     def _get_matrix_from_file(self, filename):

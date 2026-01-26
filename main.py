@@ -24,7 +24,7 @@ if source == "LIVE":
     key: str = os.environ.get("SUPABASE_KEY")
     supabase: Client = create_client(url, key)
     attractions = Attraction.get_random(supabase, count=10)
-    #TODO: get distance matrix
+    distance_matrix = LocationDistanceMatrix(attractions)
     #TODO: initialize directions
 elif source == "FILE":
     attractions = Attraction.load_list_from_json("cached_attractions.json")
@@ -77,6 +77,7 @@ async def plan_route(request: RouteRequest):
 @app.get("/")
 async def root():
     return {"message": "LangGraph backend is running 🚀"}
+
 
 @app.get("/directions")
 async def get_directions(
