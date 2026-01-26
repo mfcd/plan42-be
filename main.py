@@ -1,13 +1,13 @@
 import os
+from dotenv import load_dotenv
 from typing import Dict
 from utils.location import Location, Attraction, LocationDistanceMatrix
 from utils.local_directions_cache import LocalDirectionsCache
 from utils.charge_planner import ChargePlanner, RouteRequest
-from dotenv import load_dotenv
 from fastapi import HTTPException, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
-from agent import graph, memory
+from pydantic import BaseModel, Field
 
 
 load_dotenv()  # loads .env into os.environ (for dev)
@@ -16,6 +16,7 @@ if not openai_api_key:
     raise RuntimeError("Missing OPENAI_API_KEY")
 
 app = FastAPI(title="Route planner demo")
+from agent import graph, memory
 
 source: str = os.environ.get("BOOT_DATA_FROM")
 if source == "LIVE":
@@ -54,7 +55,6 @@ async def plan_route(request: RouteRequest):
     try:
         # 1. Initialize your planner components
         # (Assuming you have a way to load your distance matrix data)
-        distance_matrix
         planner = ChargePlanner(
             request.ordered_route, 
             request.max_mileage,
