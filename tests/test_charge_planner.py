@@ -54,8 +54,8 @@ def test_find_coords_of_max_mileage_reach_easy(setup_data):
     mileage = 1.0
     planner = ChargePlanner(ordered_route, mileage, dm, directions_cache)
     coords_max_reach = planner.find_coords_of_max_mileage_reach()
-    assert 1.0 == coords_max_reach["status"]["remaining_mileage_from_last_location_reached"]
-    assert 578 == coords_max_reach["status"]["max_reach_location"]
+    assert 1.0 == coords_max_reach["remaining_mileage_from_last_location_reached"]
+    assert 578 == coords_max_reach["max_reach_location"]
     assert coords_max_reach["reached_endpoint"] == False
 
 
@@ -82,7 +82,7 @@ def test_coordinates_with_geometry(setup_data):
     assert coords_max_reach["reached_endpoint"] == False
     assert coords_max_reach["lat"] is not None
     assert coords_max_reach["lon"] is not None
-    assert coords_max_reach["status"]["remaining_mileage_from_last_location_reached"] == 90000
+    assert coords_max_reach["remaining_mileage_from_last_location_reached"] == 90000
     # Expected output : 47.195379291532774, 7.5501459246582945
     # Corresponding to Erlenweg 23, 4528 Zuchwil
     # 91km from Longstreet bar (id=578)

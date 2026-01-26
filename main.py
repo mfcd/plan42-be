@@ -2,11 +2,13 @@ import os
 from typing import Dict
 from utils.location import Location, Attraction, LocationDistanceMatrix
 from utils.local_directions_cache import LocalDirectionsCache
+from utils.charge_planner import ChargePlanner, RouteRequest
 from dotenv import load_dotenv
 from fastapi import HTTPException, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from supabase import create_client, Client
 from agent import graph, memory
+
 
 load_dotenv()  # loads .env into os.environ (for dev)
 openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -43,10 +45,38 @@ app.add_middleware(
     allow_headers=["*"],   # allow any headers
 )
 
+@app.post("/plan-route")
+async def plan_route(request: RouteRequest):
+    """
+    Takes a list of location IDs and a vehicle range, 
+    then inserts necessary charging stops.
+    """
+    try:
+        # 1. Initialize your planner components
+        # (Assuming you have a way to load your distance matrix data)
+        distance_matrix
+        planner = ChargePlanner(
+            request.ordered_route, 
+            request.max_mileage,
+            distance_matrix,
+            directions_cache
+            )
+        
+        find_stop = planner.find_coords_of_max_mileage_reach()
+        return {
+            "status": "success",
+            "stop": find_stop
+        }
+
+    except ValueError as ve:
+        # Handle cases where the route is impossible with the given mileage
+        raise HTTPException(status_code=400, detail=str(ve))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @app.get("/")
 async def root():
     return {"message": "LangGraph backend is running 🚀"}
-
 
 @app.get("/directions")
 async def get_directions(

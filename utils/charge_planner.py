@@ -2,6 +2,15 @@ from typing import List, Optional
 from utils.location import LocationDistanceMatrix
 from utils.local_directions_cache import LocalDirectionsCache
 from shapely.geometry import LineString
+from pydantic import BaseModel, Field
+
+
+# Define the request structure that will be used on the API 
+# that runs the ChargePlanner in FASTAPI
+class RouteRequest(BaseModel):
+    # IDs starting at 1 are attractions, 1,000,000+ are chargers
+    ordered_route: List[int] = Field(..., example=[101, 102, 103], min_items=2)
+    max_mileage: float = Field(..., gt=0, example=250.0)
 
 
 class ChargePlanner():
@@ -84,10 +93,8 @@ class ChargePlanner():
             "lat": point.y,
             "lon": point.x,
             "reached_endpoint": False,
-            "status": {
-               "remaining_mileage_from_last_location_reached": remaining_mileage,
-               "max_reach_location": max_reach_location
-            }
+            "remaining_mileage_from_last_location_reached": remaining_mileage,
+            "max_reach_location": max_reach_location
          }
 
 
