@@ -34,13 +34,6 @@ elif source == "FILE":
 else:
     raise RuntimeError("BOOT_DATA_FROM should be either SUPABASE or a file")
 
-req = supabase.rpc('get_nearest_chargers', {
-            'target_lat': 47.195379291532774, 
-            'target_lon': 7.5501459246582945, 
-            'n_count': 5
-        }).execute()
-
-
 origins = [
     "http://localhost:5173",  # default Vite dev server
     "http://127.0.0.1:5173"
