@@ -12,7 +12,7 @@ import os
 
 class Location(BaseModel, ABC):
     model_config = ConfigDict(frozen=True)
-    
+
     id: int = Field(..., description="Unique database identifier")
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")

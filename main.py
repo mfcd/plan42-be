@@ -53,8 +53,6 @@ async def plan_route(request: RouteRequest):
     then inserts necessary charging stops.
     """
     try:
-        # 1. Initialize your planner components
-        # (Assuming you have a way to load your distance matrix data)
         planner = ChargePlanner(
             request.ordered_route, 
             request.max_mileage,
@@ -63,6 +61,7 @@ async def plan_route(request: RouteRequest):
             )
         
         find_stop = planner.find_coords_of_max_mileage_reach()
+        
         return {
             "status": "success",
             "stop": find_stop
