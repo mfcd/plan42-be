@@ -7,6 +7,7 @@ from utils.charge_planner import ChargePlanner, RouteRequest, CoordsMaxMileageRe
 from utils.charging_station import ChargingStation
 from fastapi import HTTPException, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from supabase import create_client, Client
 from pydantic import BaseModel, Field
 
@@ -16,9 +17,6 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 if not openai_api_key:
     raise RuntimeError("Missing OPENAI_API_KEY")
 
-app = FastAPI(title="Route planner demo")
-from agent import graph, memory
-
 url: str = os.environ.get("SUPABASE_URL")
 key: str = os.environ.get("SUPABASE_KEY")
 supabase: Client = create_client(url, key)
@@ -26,19 +24,32 @@ source: str = os.environ.get("BOOT_DATA_FROM")
 if source == "LIVE":
     attractions = Attraction.get_random(supabase, count=10)
     distance_matrix = LocationDistanceMatrix(attractions)
-    #TODO: initialize directions
+    #TODO: have a proper cache
+    directions_cache = LocalDirectionsCache() 
 elif source == "FILE":
     attractions = Attraction.load_list_from_json("cached_attractions.json")
     distance_matrix = LocationDistanceMatrix(attractions, filename="cached_distances.json")
-    directions_cache = LocalDirectionsCache()
+    directions_cache = LocalDirectionsCache() 
 else:
     raise RuntimeError("BOOT_DATA_FROM should be either SUPABASE or a file")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # --- Startup Logic ---
+    print("Server is starting up...")
+    
+    yield  # The application runs while paused here
+    
+    # --- Shutdown Logic (Triggered by Ctrl+C) ---
+    print("Shutting down... cleaning up resources.")
+    directions_cache.save_cache()
+
 
 origins = [
     "http://localhost:5173",  # default Vite dev server
     "http://127.0.0.1:5173"
 ]
-
+app = FastAPI(title="Entropy42 plan42", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
@@ -46,6 +57,8 @@ app.add_middleware(
     allow_methods=["*"],   # allow GET, POST, etc.
     allow_headers=["*"],   # allow any headers
 )
+
+from agent import graph, memory
 
 @app.post("/plan-route")
 async def plan_route(request: RouteRequest):
