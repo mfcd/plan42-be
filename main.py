@@ -62,6 +62,7 @@ async def plan_route(request: RouteRequest):
         
         find_stop = planner.find_coords_of_max_mileage_reach()
         
+
         return {
             "status": "success",
             "stop": find_stop
@@ -69,14 +70,13 @@ async def plan_route(request: RouteRequest):
 
     except ValueError as ve:
         # Handle cases where the route is impossible with the given mileage
-        raise HTTPException(status_code=400, detail=str(ve))
+        raise HTTPException(status_code=400, detail=str(ve)) from ve
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error") from e
 
 @app.get("/")
 async def root():
     return {"message": "LangGraph backend is running 🚀"}
-
 
 @app.get("/directions")
 async def get_directions(
