@@ -51,20 +51,20 @@ class ChargingStation(BaseModel):
         }).eq("id", station.id).execute()
     
 
-    def find_nearby_lat_lon(self, supabase: Client):
+    def find_nearby_lat_lon(self, lat: float, lon: float, supabase: Client):
         return supabase.rpc('get_nearest_chargers', {
-        'target_lat': 47.195379291532774, 
-        'target_lon': 7.5501459246582945, 
-        'n_count': 5
-            }).execute()
+            'target_lat': lat, 
+            'target_lon': lon, 
+            'n_count': 5
+        }).execute()
 
 
     @classmethod
-    def find_by_isochrones(self, supabase: Client):
+    def find_by_isochrones(self, lat: float, lon: float, supabase: Client):
         return supabase.rpc(
             'get_chargers_covering_point', 
             {
-                'target_lat': 47.195379291532774,
-                'target_lon': 7.5501459246582945
+                'target_lat': lat,
+                'target_lon': lon
             }
         ).execute()
