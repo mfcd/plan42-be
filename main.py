@@ -5,6 +5,7 @@ from utils.location import Location, Attraction, LocationDistanceMatrix
 from utils.local_directions_cache import LocalDirectionsCache
 from utils.charge_planner import ChargePlanner, RouteRequest, CoordsMaxMileageReach
 from utils.charging_station import ChargingStation
+from utils.directions import Directions
 from fastapi import HTTPException, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
@@ -69,16 +70,17 @@ async def plan_route(request: RouteRequest):
     then inserts necessary charging stops.
     """
 
-    ## ADD Missing directions
     ordered_route = request.ordered_route
-    print(ordered_route)
+    directions_for_route = {}
     for i, v in enumerate(ordered_route[:-1]):
         j = i + 1
-        if (ordered_route[i], ordered_route[j]) not in directions_cache.directions:
-            print((ordered_route[i], ordered_route[j]))
-
-
-
+        start_loc_id = ordered_route[i]
+        end_loc_id = ordered_route[j]
+        if (start_loc_id, end_loc_id) not in directions_cache.directions:
+            print(f"Downloading directions({ordered_route[i]}, {ordered_route[j]})")
+            start_loc = next((a for a in attractions if a.id == start_loc_id), None)
+            end_loc = next((a for a in attractions if a.id == end_loc_id), None)
+            Directions.get_from_mapbox(start_loc, end_loc, directions_cache)
     try:
         planner = ChargePlanner(
             request.ordered_route, 

@@ -1,7 +1,8 @@
 import requests
 import os
 from utils.location import Location
-from local_directions_cache import LocalDirectionsCache
+from utils.local_directions_cache import LocalDirectionsCache
+from fastapi import HTTPException, status
 
 class Directions():
 
@@ -22,11 +23,24 @@ class Directions():
             "overview": "full",
             "alternatives": "false"
         }
-        response = requests.get(url, params=params)
+        
         try:
-            response.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            # You can still access the Mapbox message if it exists
-            error_detail = response.json().get('message', 'Unknown Mapbox Error')
-            raise ValueError(f"Mapbox API Request Failed: {error_detail}") from e
-        directions_cache.add(start_loc.id, end_loc.id, response.json())
+            response = requests.get(url, params=params, timeout=10)
+            
+            if response.status_code != 200:
+                error_msg = response.json().get('message', 'Unknown Mapbox Error')
+                # Map external 4xx errors to a 400 (Bad Request) for your client
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Mapbox API Error: {error_msg}"
+                )
+            
+            data = response.json()
+            directions_cache.add(start_loc.id, end_loc.id, data)
+            return data
+
+        except requests.exceptions.RequestException as e:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Mapbox service unreachable: {str(e)}"
+            ) from e
