@@ -3,7 +3,7 @@ from typing import Annotated, Any, List
 import requests
 from shapely.geometry import shape, Point
 from shapely import wkb
-from pydantic import BaseModel, BeforeValidator, ConfigDict
+from pydantic import BaseModel, BeforeValidator, ConfigDict, Field
 from supabase import Client
 
 # The "magic" conversion logic
@@ -21,7 +21,7 @@ class ChargingStation(BaseModel):
     lat: float
     lon: float
     # Automatically becomes a Shapely Point on init
-    location: ShapelyPoint
+    location: ShapelyPoint = Field(exclude=True)
 
     # Tells Pydantic not to panic about the Shapely 'Point' type
     model_config = ConfigDict(arbitrary_types_allowed=True)

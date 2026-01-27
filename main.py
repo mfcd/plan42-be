@@ -58,6 +58,8 @@ app.add_middleware(
     allow_headers=["*"],   # allow any headers
 )
 
+a = [1,2,3,4]
+
 from agent import graph, memory
 
 @app.post("/plan-route")
@@ -66,6 +68,12 @@ async def plan_route(request: RouteRequest):
     Takes a list of location IDs and a vehicle range, 
     then inserts necessary charging stops.
     """
+
+    ## ADD Missing directions
+    for index, value in enumerate(request.ordered_route[:1], start=1):
+        print(f"Index {index}: {value}")
+
+
     try:
         planner = ChargePlanner(
             request.ordered_route, 
@@ -83,7 +91,7 @@ async def plan_route(request: RouteRequest):
 
         return {
             "status": "success",
-            "stop": planned_stop,
+            "planned_stop": planned_stop,
             "charging_stations_on_route": charging_stations_on_route
         }
 
