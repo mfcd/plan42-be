@@ -60,8 +60,6 @@ app.add_middleware(
     allow_headers=["*"],   # allow any headers
 )
 
-a = [1,2,3,4]
-
 from agent import graph, memory
 
 @app.post("/plan-route")
