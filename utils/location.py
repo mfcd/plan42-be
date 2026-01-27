@@ -12,7 +12,7 @@ import os
 
 class Location(BaseModel, ABC):
     model_config = ConfigDict(frozen=True)
-    
+
     id: int = Field(..., description="Unique database identifier")
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")
@@ -85,18 +85,17 @@ class Attraction(Location):
     
 
 class LocationDistanceMatrix:
-    def __init__(self, locations: List[Location]):
+    def __init__(self,
+                 locations: List[Location],
+                 filename=None
+        ):
         self.locations: List[Location] = locations
         # Create a lookup table to translate ID strings to matrix indices
         self.id_to_index = {loc.id: i for i, loc in enumerate(locations)}
-        get_from_mapbox_or_file = os.getenv("DISTANCES_SOURCE")
-        if get_from_mapbox_or_file=="MAPBOX":
+        if filename is None: 
             self.distance_matrix_full: List[List[float]] = self._get_matrix_from_mapbox()
-        elif get_from_mapbox_or_file=="FILE":
-            self.distance_matrix_full: List[List[float]] = self._get_matrix_from_file()
         else:
-            raise ValueError("Oh no the DISTANCES_SOURCE env variable should be either MAPBOX or FILE")
-
+            self.distance_matrix_full: List[List[float]] = self._get_matrix_from_file(filename)
 
     def _get_coords_string(self) -> str:
         """Formats locations into the Mapbox lng,lat;lng,lat format."""
@@ -109,9 +108,9 @@ class LocationDistanceMatrix:
         :param profile: mapbox/driving, mapbox/walking, mapbox/cycling
         :param use_curbside: If True, forces arrival on the right side of the road.
         """
-        access_token = os.getenv("MAPBOX_ACCESS_TOKEN")
+        access_token = os.getenv("MAPBOX_TOKEN")
         if not access_token:
-            raise ValueError("MAPBOX_ACCESS_TOKEN not found in .env file.")
+            raise ValueError("MAPBOX_TOKEN not found in .env file.")
         url = f"https://api.mapbox.com/directions-matrix/v1/{profile}/{self._get_coords_string()}"
         params = {
             "access_token": access_token,
@@ -125,10 +124,10 @@ class LocationDistanceMatrix:
         response.raise_for_status()
         distances = response.json()["distances"]
         assert len(distances) == len(self.locations)
-        return 
-    
+        return distances
+      
 
-    def _get_matrix_from_file(self, filename="cached_distances.json"):
+    def _get_matrix_from_file(self, filename):
         with open(filename, "r", encoding="utf-8") as f:
             raw_data = json.load(f)
         return raw_data["distances"]
@@ -141,6 +140,12 @@ class LocationDistanceMatrix:
         except KeyError as exc:
             # 'from exc' preserves the original traceback
             raise KeyError(f"Location ID '{location_id}' not found!") from exc
+
+
+    def get_distance_between_ids(self, id1: int, id2: int):
+        idx1 = self.get_idx(id1)
+        idx2 = self.get_idx(id2)
+        return self.distance_matrix_full[idx1][idx2]
 
 
     def get_sub_matrix(self, subset_location_ids: List[int]) -> List[List[float]]:
@@ -165,6 +170,7 @@ class LocationDistanceMatrix:
             
         return new_matrix
     
+
     def get_distance_matrix_as_dict(self, subset_locations: List[int]) -> Dict[Tuple[int, int], float]:
         """
         Returns a dictionary mapping (id, id) tuples to distances.

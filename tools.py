@@ -10,24 +10,6 @@ from utils.precedence import Precedence, check_precedence_validity, check_unique
 from langchain_core.runnables import RunnableConfig
 
 
-# Input schema
-class Route(BaseModel):
-    """Represents a route - a list of destinations to be visited and their precedences"""
-    locations: List[int] = Field(
-        ...,
-        description="List of location ids that will be visited during the route"
-    )
-    precedences: List[Precedence] = Field(
-        default=[],
-        description="Optional: precedences define, for a pair of location ids, which one should be visited first"
-    )
-
-    starting_point: int = Field(
-        ...,
-        description="Start location id. It must be one of the locations in the route. Ask to fill if not specified."
-    )
-
-
 class RoutingAgentState(AgentState):
     """
     All the info that will be persisted as state: 
@@ -117,8 +99,8 @@ def validate_route(
     and a location to visit afterwards (visit_location_after). Example:
     
     { 
-        visit_location_before: "Rome",
-        visit_location_after: "Paris"
+        visit_location_before: 111,
+        visit_location_after: 777"
     }
 
     means that you have to visit Rome before Paris.
