@@ -36,11 +36,11 @@ class LocalDirectionsCache:
             print(f"Error loading cache: {e}. Returning empty cache.")
             return {}
 
-    def get(self, id_a, id_b):
+    def get(self, id_a: int, id_b: int):
         """Helper to retrieve from state"""
         return self.directions.get((id_a, id_b))
 
-    def add(self, id_a, id_b, data):
+    def add(self, id_a: int, id_b: int, data):
         """Helper to add and save"""
         self.directions[(id_a, id_b)] = data
         self.save_cache()

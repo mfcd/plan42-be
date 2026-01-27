@@ -70,8 +70,13 @@ async def plan_route(request: RouteRequest):
     """
 
     ## ADD Missing directions
-    for index, value in enumerate(request.ordered_route[:1], start=1):
-        print(f"Index {index}: {value}")
+    ordered_route = request.ordered_route
+    print(ordered_route)
+    for i, v in enumerate(ordered_route[:-1]):
+        j = i + 1
+        if (ordered_route[i], ordered_route[j]) not in directions_cache.directions:
+            print((ordered_route[i], ordered_route[j]))
+            
 
 
     try:
