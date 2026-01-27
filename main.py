@@ -35,7 +35,9 @@ else:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # --- Startup Logic ---
+    """
+        This function handles the startup and shutdown logic.
+    """
     print("Server is starting up...")
     
     yield  # The application runs while paused here
@@ -76,7 +78,7 @@ async def plan_route(request: RouteRequest):
         j = i + 1
         if (ordered_route[i], ordered_route[j]) not in directions_cache.directions:
             print((ordered_route[i], ordered_route[j]))
-            
+
 
 
     try:
