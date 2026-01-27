@@ -63,6 +63,24 @@ app.add_middleware(
 
 from agent import graph, memory
 
+
+def to_feature(item, geometry_type="Point"):
+    """
+    Converts a Pydantic model with lat, lon into a GeoJSON Feature.
+    Extracts lat/lon for the geometry and puts everything else in properties.
+    """
+    # Use model_dump to get a dict, excluding the heavy Shapely object if it exists
+    properties = item.model_dump(exclude={"location"}) 
+    
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": geometry_type,
+            "coordinates": [item.lon, item.lat]
+        },
+        "properties": properties
+    }
+
 @app.post("/plan-route")
 async def plan_route(request: RouteRequest):
     """
@@ -70,18 +88,26 @@ async def plan_route(request: RouteRequest):
     then inserts necessary charging stops.
     """
 
-    ordered_route = request.ordered_route
-    directions_for_route = {}
-    for i, v in enumerate(ordered_route[:-1]):
-        j = i + 1
-        start_loc_id = ordered_route[i]
-        end_loc_id = ordered_route[j]
-        if (start_loc_id, end_loc_id) not in directions_cache.directions:
-            print(f"Downloading directions({ordered_route[i]}, {ordered_route[j]})")
-            start_loc = next((a for a in attractions if a.id == start_loc_id), None)
-            end_loc = next((a for a in attractions if a.id == end_loc_id), None)
-            Directions.get_from_mapbox(start_loc, end_loc, directions_cache)
-    try:
+    try:    
+        ordered_route = request.ordered_route
+        data_directions_for_route = []
+        for i, v in enumerate(ordered_route[:-1]):
+            j = i + 1
+            start_loc_id = ordered_route[i]
+            end_loc_id = ordered_route[j]
+            if (start_loc_id, end_loc_id) not in directions_cache.directions:
+                print(f"Downloading directions({ordered_route[i]}, {ordered_route[j]})")
+                start_loc = next((a for a in attractions if a.id == start_loc_id), None)
+                end_loc = next((a for a in attractions if a.id == end_loc_id), None)
+                data = Directions.get_from_mapbox(start_loc, end_loc, directions_cache)
+            else:
+                data = directions_cache.directions[(start_loc_id, end_loc_id)]
+            data_directions_for_route.append(data)
+        line_coordinates = [
+            d["routes"][0]["geometry"]["coordinates"]
+            for d in data_directions_for_route
+        ]
+
         planner = ChargePlanner(
             request.ordered_route, 
             request.max_mileage,
@@ -98,8 +124,29 @@ async def plan_route(request: RouteRequest):
 
         return {
             "status": "success",
-            "planned_stop": planned_stop,
-            "charging_stations_on_route": charging_stations_on_route
+            "planned_stops": {
+                "type": "FeatureCollection",
+                "features": [
+                    to_feature(planned_stop)
+                ] #TODO: in the future this will be a real list 
+            },
+            "charging_stations_on_route": {
+                "type": "FeatureCollection",
+                "features": [
+                    to_feature(cs) for cs in charging_stations_on_route
+                ]
+            },
+            "route": {
+                "type": "FeatureCollection",
+                "features": [{
+                    "type": "Feature",
+                    "properties": {"name": "Full Route Path "},
+                    "geometry": {
+                    "type": "MultiLineString",
+                    "coordinates": line_coordinates
+                    }
+                }]
+            },
         }
 
     except ValueError as ve:
