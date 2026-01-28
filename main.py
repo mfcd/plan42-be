@@ -221,3 +221,10 @@ async def chat(req: ChatRequest):
     #new_messages = result["messages"][req.currently_fe_buffered_messages:]
     # The last message in the updated state is the agent's reply
     return result
+
+
+@app.get("/locations", response_model=Dict[str, Dict[int, Location]])
+async def get_locations():
+    return {
+        "locations": {a.id: a for a in attractions}
+    }

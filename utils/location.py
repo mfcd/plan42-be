@@ -16,6 +16,7 @@ class Location(BaseModel, ABC):
     id: int = Field(..., description="Unique database identifier")
     lat: float = Field(..., description="Latitude")
     lon: float = Field(..., description="Longitude")
+    name: str = Field(..., description="Location name, easier to browse than id")
 
     @field_validator('lat')
     @classmethod
@@ -37,7 +38,6 @@ class Location(BaseModel, ABC):
 
 
 class Attraction(Location):
-    name: str
     myswitzerland_id: str = Field(..., description="keep the myswitzerland id!")
     photo: Optional[str] = None
     abstract: Optional[str] = None
